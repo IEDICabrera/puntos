@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "Asistencia · Banco de Puntos",
+  "short_name": "Asistencia",
+  "description": "Toma asistencia con las tarjetas NFC.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2f7",
+  "theme_color": "#11845b",
+  "icons": [
+    {
+      "src": "../icon-asistencia-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "../icon-asistencia-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

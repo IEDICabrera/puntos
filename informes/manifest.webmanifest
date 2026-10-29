@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "Informes · Banco de Puntos",
+  "short_name": "Informes",
+  "description": "Estadísticas y reportes del Banco de Puntos.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef2f7",
+  "theme_color": "#5b3fc4",
+  "icons": [
+    {
+      "src": "../icon-informes-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "../icon-informes-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

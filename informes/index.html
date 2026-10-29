@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b3fc4">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../icon-informes-192.png">
+<link rel="apple-touch-icon" href="../icon-informes-192.png">
+<title>Informes</title>
+<link rel="stylesheet" href="../nucleo.css">
+<style>
+main{max-width:1100px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}
+header{max-width:1100px}
+.nav-inf{position:sticky;top:calc(env(safe-area-inset-top,0px) + 54px);z-index:4;background:var(--bg);display:flex;gap:8px;overflow-x:auto;padding:4px 18px 10px;max-width:1100px;margin:0 auto}
+.nav-inf button{flex:none;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;font-size:14px}
+.nav-inf button.act{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;background:var(--surface);border-radius:18px;padding:12px}
+.filtros label{font-size:13px;font-weight:700;color:var(--muted)}
+.filtros select,.filtros input{margin-top:4px;padding:9px 10px}
+.grafica svg{max-width:640px;margin:0 auto}
+.dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.dos>div>h2{margin-top:18px}
+.fila-click{cursor:pointer}
+.fila-click:hover td{background:var(--surface2)}
+.hojaQR{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:12px}
+.fichaQR{--tc-bg:var(--card);--tc-ink:var(--on-card);background:var(--surface);border-radius:16px;padding:14px;break-inside:avoid;border-top:10px solid var(--tc-bg)}
+.fichaQR b{display:block;font-size:17px}
+.fichaQR small{color:var(--muted)}
+.fichaQR .qr{margin:10px auto 6px;max-width:170px}
+.fichaQR .s{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+@media print{
+  body{background:#fff;color:#000}
+  header,.nav-inf,.filtros,.tabbar,.no-imprimir,#toast{display:none!important}
+  main{padding:0;max-width:none}
+  .tab:not([data-tab=imprimir]){display:none!important}
+  .hojaQR{grid-template-columns:repeat(3,1fr);gap:8px}
+  .fichaQR{border:1px solid #999;color:#000;background:#fff}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Informes</h1>
+  <span class="etq" id="fuenteInfo"></span>
+</header>
+<nav class="nav-inf" id="nav">
+  <button data-ir="resumen" class="act">Resumen</button><button data-ir="cursos">Cursos</button><button data-ir="estudiantes">Estudiantes</button>
+  <button data-ir="motivos">Motivos y canjes</button><button data-ir="asistencia">Asistencia</button><button data-ir="imprimir">Hoja de QR</button><button data-ir="datos">Datos</button>
+</nav>
+
+<main>
+  <div class="filtros no-imprimir" id="filtros">
+    <label>Curso<select id="fCurso"></select></label>
+    <label>Periodo<select id="fPeriodo"></select></label>
+    <label>Desde<input type="date" id="fDesde"></label>
+    <label>Hasta<input type="date" id="fHasta"></label>
+  </div>
+
+  <section class="tab" data-tab="resumen">
+    <h2>En cifras</h2>
+    <div class="kpis" id="rKpis"></div>
+    <div class="dos">
+      <div><h2>Puntos dados y gastados por semana</h2><div class="grafica" id="rSemanas"></div></div>
+      <div><h2>Saldo promedio por curso</h2><div class="grafica" id="rCursos"></div></div>
+    </div>
+    <h2>Puntos en circulación por cuenta</h2>
+    <div class="grafica" id="rCuentas"></div>
+  </section>
+
+  <section class="tab" data-tab="cursos" hidden>
+    <div class="tabla-wrap"><table class="t" id="tCursos"></table></div>
+    <button class="sec no-imprimir" data-exportar="cursos">Descargar tabla (CSV)</button>
+  </section>
+
+  <section class="tab" data-tab="estudiantes" hidden>
+    <input id="buscar" type="search" placeholder="Buscar estudiante" style="margin-top:12px">
+    <div class="tabla-wrap"><table class="t" id="tEst"></table></div>
+    <p class="nota">Toca una fila para ver el detalle. «Inactivo»: sin movimientos en 30 días. «Saldo alto»: más del doble del promedio de su curso.</p>
+    <button class="sec no-imprimir" data-exportar="estudiantes">Descargar tabla (CSV)</button>
+  </section>
+
+  <section class="tab" data-tab="motivos" hidden>
+    <div class="dos">
+      <div><h2>Puntos dados por motivo</h2><div class="grafica" id="mDar"></div></div>
+      <div><h2>Puntos cobrados por motivo</h2><div class="grafica" id="mCobrar"></div></div>
+      <div><h2>Canjes</h2><div class="grafica" id="mCanjes"></div></div>
+      <div><h2>Puntos dados por docente</h2><div class="grafica" id="mDocentes"></div></div>
+    </div>
+  </section>
+
+  <section class="tab" data-tab="asistencia" hidden>
+    <div id="aVacio" class="aviso" hidden><b>Sin datos de asistencia</b><p>Usa «Datos de este dispositivo» si tomas asistencia en este teléfono, o importa el CSV que comparte la app de Asistencia.</p></div>
+    <h2>Por curso</h2>
+    <div class="tabla-wrap"><table class="t" id="aCursos"></table></div>
+    <h2>Por estudiante</h2>
+    <div class="tabla-wrap"><table class="t" id="aEst"></table></div>
+  </section>
+
+  <section class="tab" data-tab="imprimir" hidden>
+    <div class="panel no-imprimir">
+      <p style="margin-top:0">Una ficha por estudiante con su saldo y un código QR. La familia lo escanea con la cámara de cualquier celular y ve los puntos, cuentas y movimientos en Mis Puntos.</p>
+      <p class="nota">Es una foto del registro en este momento. Elige un curso en los filtros de arriba.</p>
+      <button class="grande" id="imprimir">Imprimir</button>
+    </div>
+    <div class="hojaQR" id="hojaQR"></div>
+  </section>
+
+  <section class="tab" data-tab="datos" hidden>
+    <h2>Fuentes de datos</h2>
+    <div class="panel">
+      <button class="grande" id="usarLocal" style="margin-top:0">Usar los datos de este dispositivo</button>
+      <p class="nota">Toma el Banco de Puntos y la Asistencia de este mismo navegador.</p>
+      <label class="sec archivo">Importar CSV (saldos, movimientos o asistencia)<input type="file" id="importar" accept=".csv,text/csv" multiple></label>
+      <p class="nota">Puedes importar los archivos de varios docentes: se combinan sin duplicar. Si un estudiante aparece en varios, se usa su versión más reciente.</p>
+      <div id="listaFuentes"></div>
+      <button class="sec peligro" id="borrar">Borrar los datos de Informes</button>
+      <p class="nota">Borrar aquí no afecta al Banco ni a la Asistencia.</p>
+    </div>
+  </section>
+</main>
+
+<script src="../qrcode.js"></script>
+<script src="../nucleo.js"></script>
+<script>
+'use strict';
+const { $, $$, esc, fmt } = BP;
+const KEY = 'informes.v1';
+let I = (() => { try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.students) return d; } catch (e) {} return { students: {}, movs: [], asis: [], fuentes: [] }; })();
+const guardar = () => { try { localStorage.setItem(KEY, JSON.stringify(I)); } catch (e) { BP.toast('Los datos son muy grandes para guardarlos; seguirán disponibles mientras la página esté abierta.'); } };
+let tab = 'resumen', orden = { k: 'nombre', asc: true }, tablas = {};
+
+/* ---------- Combinar datos ---------- */
+function unirEstudiante(uid, t, estado) {
+  const s = I.students[uid];
+  if (!s || t.contador > s.t.contador) I.students[uid] = { uid, t, estado: estado || s?.estado || 'activa' };
+  else if (estado === 'bloqueada') s.estado = 'bloqueada';
+}
+function unirMovs(lista) { const ids = new Set(I.movs.map(m => m.id)); let n = 0; for (const m of lista) { if (!m.id || ids.has(m.id)) continue; I.movs.push(m); ids.add(m.id); n++; } I.movs.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha))); return n; }
+function unirAsis(lista) { const k = r => r.sesion + '|' + r.uid, ids = new Set(I.asis.map(k)); let n = 0; for (const r of lista) { if (ids.has(k(r))) continue; I.asis.push(r); ids.add(k(r)); n++; } return n; }
+function fuente(nombre, detalle) { I.fuentes = I.fuentes.filter(f => f.nombre !== nombre); I.fuentes.push({ nombre, detalle, fecha: new Date().toISOString() }); }
+
+$('#usarLocal').onclick = () => {
+  const db = BP.leerBanco(); let txt = [];
+  if (db) { Object.values(db.students).forEach(s => s.t && unirEstudiante(s.uid, BP.clon(s.t), s.estado)); const n = unirMovs(db.movs.map(m => ({ ...m }))); txt.push(`${Object.keys(db.students).length} estudiantes, ${n} movimientos nuevos`); }
+  try {
+    const a = JSON.parse(localStorage.getItem('asistencia.v1'));
+    if (a?.sesiones) { const filas = a.sesiones.filter(s => s.cerrada).flatMap(s => Object.entries(s.reg).map(([uid, r]) => ({ sesion: s.id, fecha: s.fecha, curso: s.curso, franja: s.franja || '', uid, nombre: r.nombre, estado: r.e }))); txt.push(`${unirAsis(filas)} registros de asistencia nuevos`); }
+  } catch (e) {}
+  if (!txt.length) return BP.toast('No hay datos del Banco ni de Asistencia en este navegador.');
+  fuente('Este dispositivo', txt.join('; ')); guardar(); BP.toast('Datos cargados: ' + txt.join('; ') + '.'); pintarTodo();
+};
+$('#importar').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = ''; const res = [];
+  for (const f of files) {
+    const { cab, filas } = BP.leerCSV(await f.text()), num = (r, k, d) => { const v = parseInt(r[k], 10); return Number.isFinite(v) ? v : d; };
+    if (cab.includes('sesion') && cab.includes('estado')) { res.push(`${f.name}: ${unirAsis(filas.map(r => ({ sesion: r.sesion, fecha: r.fecha, curso: r.curso, franja: r.franja, uid: (r.uid || '').toUpperCase(), nombre: r.nombre, estado: r.estado })))} de asistencia`); }
+    else if (cab.includes('tipo') && cab.includes('puntos')) { res.push(`${f.name}: ${unirMovs(filas.map(r => ({ ...r, uid: (r.uid || '').toUpperCase(), puntos: num(r, 'puntos', 0), saldo: num(r, 'saldo', 0), cuenta: num(r, 'cuenta', 0), periodo: num(r, 'periodo', 1), contador: num(r, 'contador', 0) })))} movimientos`); }
+    else if (cab.includes('uid') && cab.includes('saldo')) {
+      let n = 0;
+      for (const r of filas) {
+        const uid = (r.uid || '').toUpperCase(); if (!uid) continue;
+        let t = null; try { if (r.datos_tarjeta) t = BP.decodificar(BP.b64d(r.datos_tarjeta)); } catch (_) {}
+        t = t || { cuentas: [], movs: [], contador: 0, ganado: 0, gastado: 0, registro: 0, periodo: 1, color: 0, emoji: 0, nombre: r.nombre || 'Sin nombre', curso: r.curso || '' };
+        if (r.cuentas) t.cuentas = r.cuentas.split(/\s+/).map(x => x.split(':').map(Number)).filter(([c, v]) => Number.isFinite(c) && Number.isFinite(v)).map(([c, v]) => ({ c, s: v }));
+        else if (!r.datos_tarjeta && r.saldo) t.cuentas = [{ c: 0, s: num(r, 'saldo', 0) }];
+        BP.recalcular(t); t.contador = num(r, 'contador', t.contador); t.ganado = num(r, 'ganado', t.ganado); t.gastado = num(r, 'gastado', t.gastado); t.periodo = num(r, 'periodo', t.periodo);
+        if (r.nombre) t.nombre = r.nombre; if (r.curso !== undefined) t.curso = r.curso;
+        unirEstudiante(uid, t, r.estado === 'bloqueada' ? 'bloqueada' : 'activa'); n++;
+      }
+      res.push(`${f.name}: ${n} estudiantes`);
+    } else res.push(`${f.name}: formato no reconocido`);
+    fuente(f.name, res[res.length - 1]);
+  }
+  guardar(); BP.toast(res.join('. ') + '.'); pintarTodo();
+};
+$('#borrar').onclick = () => { if (!confirm('¿Borrar todos los datos cargados en Informes?')) return; I = { students: {}, movs: [], asis: [], fuentes: [] }; guardar(); pintarTodo(); };
+
+/* ---------- Filtros ---------- */
+const est = () => Object.values(I.students).filter(s => s.estado !== 'bloqueada');
+const cursoDe = uid => I.students[uid]?.t.curso;
+function filtros() { return { curso: $('#fCurso').value, periodo: $('#fPeriodo').value, desde: $('#fDesde').value, hasta: $('#fHasta').value }; }
+function movsF() {
+  const f = filtros();
+  return I.movs.filter(m => (!f.curso || (m.curso || cursoDe(m.uid)) === f.curso) && (!f.periodo || String(m.periodo) === f.periodo)
+    && (!f.desde || m.fecha.slice(0, 10) >= f.desde) && (!f.hasta || m.fecha.slice(0, 10) <= f.hasta));
+}
+const estF = () => { const f = filtros(); return est().filter(s => !f.curso || s.t.curso === f.curso); };
+function pintarFiltros() {
+  const cursos = [...new Set(est().map(s => s.t.curso).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+  const periodos = [...new Set(I.movs.map(m => m.periodo).filter(Boolean))].sort((a, b) => a - b);
+  const c = $('#fCurso'), pc = c.value, p = $('#fPeriodo'), pp = p.value;
+  c.innerHTML = '<option value="">Todos</option>' + cursos.map(x => `<option>${esc(x)}</option>`).join(''); c.value = cursos.includes(pc) ? pc : '';
+  p.innerHTML = '<option value="">Todos</option>' + periodos.map(x => `<option value="${x}">Periodo ${x}</option>`).join(''); p.value = periodos.map(String).includes(pp) ? pp : '';
+  $('#fuenteInfo').textContent = I.fuentes.length ? `${est().length} estudiantes, ${I.movs.length} movimientos` : 'Sin datos';
+}
+$$('#filtros select, #filtros input').forEach(el => el.onchange = () => pintarTab());
+
+/* ---------- Gráficas ---------- */
+const corta = (s, n) => (s = String(s)).length > n ? s.slice(0, n - 1) + '…' : s;
+function barras(items, color = 'var(--dar)') {
+  if (!items.length) return '<p class="vacio">Sin datos en este filtro.</p>';
+  const W = 420, F = 30, L = 130, H = items.length * F + 8, max = Math.max(...items.map(i => i.v), 1);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img">` + items.map((it, i) => { const w = (W - L - 70) * Math.max(0, it.v) / max, y = 4 + i * F;
+    return `<text x="${L - 8}" y="${y + 19}" text-anchor="end">${esc(corta(it.l, 18))}</text><rect x="${L}" y="${y + 5}" width="${Math.max(w, 1)}" height="${F - 10}" rx="5" fill="${it.c || color}"/><text x="${L + w + 6}" y="${y + 19}">${it.t ?? fmt(it.v)}</text>`; }).join('') + '</svg>';
+}
+function lineas(etiquetas, series) {
+  if (etiquetas.length < 2) return '<p class="vacio">Hacen falta datos de al menos dos semanas.</p>';
+  const W = 420, H = 220, P = 38, max = Math.max(1, ...series.flatMap(s => s.v));
+  const x = i => P + i * (W - 2 * P) / (etiquetas.length - 1), y = v => H - P - v * (H - 2 * P) / max, paso = Math.ceil(etiquetas.length / 4);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img"><line x1="${P}" y1="${H - P}" x2="${W - P}" y2="${H - P}" stroke="var(--line)"/><text x="${P - 6}" y="${y(max) + 4}" text-anchor="end">${fmt(max)}</text><text x="${P - 6}" y="${H - P + 4}" text-anchor="end">0</text>`
+    + series.map(s => `<polyline points="${s.v.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="${s.c}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`).join('')
+    + etiquetas.map((e, i) => i % paso === 0 || i === etiquetas.length - 1 ? `<text x="${x(i)}" y="${H - P + 18}" text-anchor="middle">${esc(e)}</text>` : '').join('') + '</svg>'
+    + `<div class="leyenda">${series.map(s => `<span><i style="background:${s.c}"></i>${esc(s.n)}</span>`).join('')}</div>`;
+}
+const semana = iso => { const d = new Date(iso); d.setHours(12); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.toISOString().slice(0, 10); };
+const mediana = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const esDado = m => (m.tipo === 'dar' || m.tipo === 'apertura') && m.puntos > 0;
+const esGasto = m => (m.tipo === 'cobrar' || m.tipo === 'canje') && m.puntos < 0;
+
+/* ---------- Resumen ---------- */
+function pintarResumen() {
+  const ms = movsF(), es = estF(), dados = ms.filter(esDado).reduce((a, m) => a + m.puntos, 0), gast = ms.filter(esGasto).reduce((a, m) => a - m.puntos, 0);
+  $('#rKpis').innerHTML = `<div><b>${fmt(es.length)}</b><small>estudiantes</small></div><div><b>${fmt(es.reduce((a, s) => a + s.t.saldo, 0))}</b><small>puntos en circulación</small></div>
+    <div><b class="pos">${fmt(dados)}</b><small>puntos dados</small></div><div><b class="neg">${fmt(gast)}</b><small>puntos gastados</small></div><div><b>${fmt(ms.length)}</b><small>movimientos</small></div>`;
+  const sem = [...new Set(ms.map(m => semana(m.fecha)))].sort().slice(-16);
+  $('#rSemanas').innerHTML = lineas(sem.map(s => BP.fechaCorta(s)), [
+    { n: 'Dados', c: 'var(--dar)', v: sem.map(s => ms.filter(m => esDado(m) && semana(m.fecha) === s).reduce((a, m) => a + m.puntos, 0)) },
+    { n: 'Gastados', c: 'var(--cobrar)', v: sem.map(s => ms.filter(m => esGasto(m) && semana(m.fecha) === s).reduce((a, m) => a - m.puntos, 0)) }]);
+  const porCurso = {}; es.forEach(s => (porCurso[s.t.curso || 'Sin curso'] = porCurso[s.t.curso || 'Sin curso'] || []).push(s.t.saldo));
+  $('#rCursos').innerHTML = barras(Object.entries(porCurso).sort((a, b) => a[0].localeCompare(b[0], 'es', { numeric: true })).map(([c, v]) => ({ l: c, v: Math.round(v.reduce((a, x) => a + x, 0) / v.length), c: BP.PALETA[BP.colorCurso(c)].bg })));
+  const cts = {}; es.forEach(s => (s.t.cuentas || []).forEach(x => cts[x.c] = (cts[x.c] || 0) + x.s));
+  $('#rCuentas').innerHTML = barras(Object.entries(cts).sort((a, b) => a[0] - b[0]).map(([c, v]) => ({ l: BP.nombreCuenta(+c), v, c: +c === 0 ? 'var(--canje)' : 'var(--dar)' })));
+}
+
+/* ---------- Cursos ---------- */
+function ultimoMov(uid) { for (let i = I.movs.length - 1; i >= 0; i--) if (I.movs[i].uid === uid) return I.movs[i].fecha; return null; }
+const diasDesde = iso => iso ? Math.floor((Date.now() - new Date(iso)) / 864e5) : null;
+function pctAsis(filas) { const v = filas.filter(r => r.estado !== 'J'); return v.length ? v.filter(r => r.estado === 'P' || r.estado === 'T').length / v.length : null; }
+function pintarCursos() {
+  const g = {}; estF().forEach(s => (g[s.t.curso || 'Sin curso'] = g[s.t.curso || 'Sin curso'] || []).push(s));
+  const filas = Object.entries(g).sort((a, b) => a[0].localeCompare(b[0], 'es', { numeric: true })).map(([c, ss]) => {
+    const v = ss.map(s => s.t.saldo), a = pctAsis(I.asis.filter(r => r.curso === c));
+    return { curso: c, estudiantes: ss.length, total: v.reduce((x, y) => x + y, 0), promedio: Math.round(v.reduce((x, y) => x + y, 0) / v.length), mediana: Math.round(mediana(v)), maximo: Math.max(...v), minimo: Math.min(...v), inactivos: ss.filter(s => { const d = diasDesde(ultimoMov(s.uid)); return d === null || d > 30; }).length, asistencia: a === null ? '' : BP.pct(a) };
+  });
+  tablas.cursos = { filas, cols: ['curso', 'estudiantes', 'total', 'promedio', 'mediana', 'maximo', 'minimo', 'inactivos', 'asistencia'] };
+  $('#tCursos').innerHTML = filas.length ? `<thead><tr><th>Curso</th><th class="n">Estudiantes</th><th class="n">Total</th><th class="n">Promedio</th><th class="n">Mediana</th><th class="n">Máximo</th><th class="n">Mínimo</th><th class="n">Inactivos</th><th class="n">Asistencia</th></tr></thead><tbody>`
+    + filas.map(f => `<tr><td><b>${esc(f.curso)}</b></td><td class="n">${f.estudiantes}</td><td class="n">${fmt(f.total)}</td><td class="n">${fmt(f.promedio)}</td><td class="n">${fmt(f.mediana)}</td><td class="n">${fmt(f.maximo)}</td><td class="n">${fmt(f.minimo)}</td><td class="n">${f.inactivos}</td><td class="n">${f.asistencia || '–'}</td></tr>`).join('') + '</tbody>'
+    : '<tbody><tr><td class="vacio">Sin datos. Ve a la pestaña Datos.</td></tr></tbody>';
+}
+
+/* ---------- Estudiantes ---------- */
+function filasEst() {
+  const es = estF(), prom = {};
+  es.forEach(s => { const c = s.t.curso || ''; prom[c] = prom[c] || []; prom[c].push(s.t.saldo); });
+  Object.keys(prom).forEach(c => prom[c] = prom[c].reduce((a, x) => a + x, 0) / prom[c].length);
+  return es.map(s => { const u = ultimoMov(s.uid), d = diasDesde(u), a = pctAsis(I.asis.filter(r => r.uid === s.uid));
+    const alertas = []; if (d === null || d > 30) alertas.push('Inactivo'); if (prom[s.t.curso || ''] > 0 && s.t.saldo > 2 * prom[s.t.curso || '']) alertas.push('Saldo alto'); if (a !== null && a < .8) alertas.push('Asistencia baja');
+    return { uid: s.uid, nombre: s.t.nombre, curso: s.t.curso || '', saldo: s.t.saldo, ganados: s.t.ganado, gastados: s.t.gastado, ultimo: u ? u.slice(0, 10) : '', dias: d ?? '', asistencia: a === null ? '' : Math.round(a * 100), alertas: alertas.join(', ') }; });
+}
+function pintarEst() {
+  const q = $('#buscar').value.trim().toLowerCase();
+  let f = filasEst().filter(x => !q || (x.nombre + ' ' + x.curso).toLowerCase().includes(q));
+  const k = orden.k; f.sort((a, b) => { const x = a[k], y = b[k]; const r = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'es', { numeric: true }); return orden.asc ? r : -r; });
+  tablas.estudiantes = { filas: f, cols: ['nombre', 'curso', 'saldo', 'ganados', 'gastados', 'ultimo', 'dias', 'asistencia', 'alertas'] };
+  const th = (k, t, n) => `<th data-orden="${k}" class="${n ? 'n' : ''}">${t}${orden.k === k ? (orden.asc ? ' ↑' : ' ↓') : ''}</th>`;
+  $('#tEst').innerHTML = `<thead><tr>${th('nombre', 'Estudiante')}${th('curso', 'Curso')}${th('saldo', 'Saldo', 1)}${th('ganados', 'Ganados', 1)}${th('gastados', 'Gastados', 1)}${th('ultimo', 'Último mov.')}${th('asistencia', 'Asistencia', 1)}<th>Alertas</th></tr></thead><tbody>`
+    + (f.map(x => `<tr class="fila-click" data-uid="${esc(x.uid)}"><td><b>${esc(x.nombre)}</b></td><td>${esc(x.curso)}</td><td class="n">${fmt(x.saldo)}</td><td class="n pos">${fmt(x.ganados)}</td><td class="n neg">${fmt(x.gastados)}</td><td>${x.ultimo ? BP.fechaCorta(x.ultimo) : '–'}</td><td class="n">${x.asistencia === '' ? '–' : x.asistencia + ' %'}</td><td>${x.alertas.split(', ').filter(Boolean).map(a => `<span class="etq ${a === 'Inactivo' ? '' : 'warn'}">${a}</span>`).join(' ')}</td></tr>`).join('') || '<tr><td class="vacio">Sin datos.</td></tr>') + '</tbody>';
+}
+$('#buscar').oninput = pintarEst;
+$('#tEst').onclick = e => {
+  const h = e.target.closest('[data-orden]'); if (h) { const k = h.dataset.orden; orden = { k, asc: orden.k === k ? !orden.asc : k === 'nombre' || k === 'curso' }; return pintarEst(); }
+  const r = e.target.closest('[data-uid]'); if (r) detalle(r.dataset.uid);
+};
+function detalle(uid) {
+  const s = I.students[uid], ms = I.movs.filter(m => m.uid === uid);
+  const graf = ms.length >= 2 ? lineas(ms.map(m => BP.fechaCorta(m.fecha)), [{ n: 'Saldo total', c: 'var(--dar)', v: ms.map(m => m.saldo || 0) }]) : '<p class="vacio">Hacen falta más movimientos para la gráfica.</p>';
+  BP.abrirHoja(`${BP.tarjetaHTML(s.t, '')}${BP.cuentasHTML(s.t)}<h3>Evolución</h3><div class="grafica">${graf}</div>
+    <h3>Movimientos (${ms.length})</h3><div class="movs">${ms.slice().reverse().slice(0, 60).map(m => `<div class="mov"><span><b>${esc(m.motivo || BP.nombreMotivo(m.tipo, m.codigo))}</b>${m.observacion ? `<i>${esc(m.observacion)}</i>` : ''}<small>${BP.cuando(m.fecha)}${m.docente ? ', ' + esc(m.docente) : ''}${m.cuenta_nombre ? ', cuenta ' + esc(m.cuenta_nombre) : ''}</small></span>${BP.signo(m.puntos)}</div>`).join('') || '<p class="vacio">Sin movimientos cargados.</p>'}</div>
+    <button class="sec" data-x>Cerrar</button>`);
+}
+
+/* ---------- Motivos y canjes ---------- */
+function agrupar(ms, clave, valor) { const g = {}; ms.forEach(m => { const k = clave(m); g[k] = (g[k] || 0) + valor(m); }); return Object.entries(g).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([l, v]) => ({ l, v })); }
+function pintarMotivos() {
+  const ms = movsF();
+  $('#mDar').innerHTML = barras(agrupar(ms.filter(m => m.tipo === 'dar' && m.puntos > 0), m => m.motivo || BP.nombreMotivo(m.tipo, m.codigo), m => m.puntos));
+  $('#mCobrar').innerHTML = barras(agrupar(ms.filter(m => m.tipo === 'cobrar'), m => m.motivo || BP.nombreMotivo(m.tipo, m.codigo), m => -m.puntos), 'var(--cobrar)');
+  const cj = {}; ms.filter(m => m.tipo === 'canje').forEach(m => { const k = (m.motivo || BP.nombreMotivo('canje', m.codigo)).replace(/^Canje: /, ''); cj[k] = cj[k] || { n: 0, p: 0 }; cj[k].n++; cj[k].p -= m.puntos; });
+  $('#mCanjes').innerHTML = barras(Object.entries(cj).sort((a, b) => b[1].n - a[1].n).map(([l, x]) => ({ l, v: x.n, t: `${x.n} (${fmt(x.p)} pts)` })), 'var(--canje)');
+  $('#mDocentes').innerHTML = barras(agrupar(ms.filter(esDado), m => m.docente || 'Sin nombre', m => m.puntos));
+}
+
+/* ---------- Asistencia ---------- */
+function pintarAsis() {
+  const f = filtros(), rs = I.asis.filter(r => (!f.curso || r.curso === f.curso) && (!f.desde || r.fecha >= f.desde) && (!f.hasta || r.fecha <= f.hasta));
+  $('#aVacio').hidden = rs.length > 0;
+  const g = {}; rs.forEach(r => (g[r.curso] = g[r.curso] || []).push(r));
+  $('#aCursos').innerHTML = rs.length ? '<thead><tr><th>Curso</th><th class="n">Sesiones</th><th class="n">A tiempo</th><th class="n">Tarde</th><th class="n">Justificadas</th><th class="n">Ausencias</th><th class="n">Asistencia</th></tr></thead><tbody>'
+    + Object.entries(g).sort((a, b) => a[0].localeCompare(b[0], 'es', { numeric: true })).map(([c, x]) => { const n = e => x.filter(r => r.estado === e).length;
+      return `<tr><td><b>${esc(c)}</b></td><td class="n">${new Set(x.map(r => r.sesion)).size}</td><td class="n">${n('P')}</td><td class="n">${n('T')}</td><td class="n">${n('J')}</td><td class="n">${n('A')}</td><td class="n"><b>${BP.pct(pctAsis(x))}</b></td></tr>`; }).join('') + '</tbody>' : '';
+  const u = {}; rs.forEach(r => (u[r.uid] = u[r.uid] || []).push(r));
+  $('#aEst').innerHTML = rs.length ? '<thead><tr><th>Estudiante</th><th>Curso</th><th class="n">P</th><th class="n">T</th><th class="n">J</th><th class="n">A</th><th class="n">%</th></tr></thead><tbody>'
+    + Object.entries(u).map(([uid, x]) => ({ uid, x, p: pctAsis(x), n: x[x.length - 1].nombre, c: x[0].curso })).sort((a, b) => (a.p ?? 1) - (b.p ?? 1)).map(o => { const n = e => o.x.filter(r => r.estado === e).length;
+      return `<tr><td><b>${esc(o.n)}</b></td><td>${esc(o.c)}</td><td class="n">${n('P')}</td><td class="n">${n('T')}</td><td class="n">${n('J')}</td><td class="n">${n('A')}</td><td class="n"><b class="${o.p !== null && o.p < .8 ? 'neg' : ''}">${o.p === null ? '–' : BP.pct(o.p)}</b></td></tr>`; }).join('') + '</tbody>' : '';
+}
+
+/* ---------- Hoja de QR ---------- */
+function pintarQR() {
+  const f = filtros();
+  if (!f.curso) { $('#hojaQR').innerHTML = '<p class="vacio">Elige un curso en los filtros de arriba.</p>'; return; }
+  const es = estF().sort((a, b) => a.t.nombre.localeCompare(b.t.nombre, 'es')), hoy = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  $('#hojaQR').innerHTML = es.map(s => `<div class="fichaQR" style="${BP.estilo(s.t)}"><b>${BP.emojiDe(s.t)} ${esc(s.t.nombre)}</b><small>${esc(s.t.curso)}</small>
+    <div class="qr">${BP.qrSVG(BP.urlDesdeRegistro(s.t))}</div><div class="s">${fmt(s.t.saldo)} puntos</div><small>Datos del ${hoy}. Escanea para ver cuentas y movimientos.</small></div>`).join('') || '<p class="vacio">No hay estudiantes en este curso.</p>';
+}
+$('#imprimir').onclick = () => { if (!filtros().curso) return BP.toast('Elige un curso primero.'); window.print(); };
+
+/* ---------- Datos ---------- */
+function pintarDatos() {
+  $('#listaFuentes').innerHTML = I.fuentes.length ? '<h3>Cargado</h3>' + I.fuentes.map(f => `<div class="mov"><span><b>${esc(f.nombre)}</b><small>${esc(f.detalle)}, ${BP.cuando(f.fecha)}</small></span></div>`).join('') : '<p class="vacio">Todavía no hay datos cargados.</p>';
+}
+
+/* ---------- Exportar tablas ---------- */
+$$('[data-exportar]').forEach(b => b.onclick = () => { const t = tablas[b.dataset.exportar]; if (t) BP.descargar(`informe-${b.dataset.exportar}-${BP.hoyISO()}.csv`, BP.aCSV(t.filas, t.cols)); });
+
+/* ---------- Navegación ---------- */
+function pintarTab() {
+  pintarFiltros();
+  ({ resumen: pintarResumen, cursos: pintarCursos, estudiantes: pintarEst, motivos: pintarMotivos, asistencia: pintarAsis, imprimir: pintarQR, datos: pintarDatos })[tab]();
+}
+const pintarTodo = () => pintarTab();
+$('#nav').onclick = e => { const b = e.target.closest('[data-ir]'); if (!b) return; tab = b.dataset.ir; $$('#nav button').forEach(x => x.classList.toggle('act', x === b)); $$('.tab').forEach(s => s.hidden = s.dataset.tab !== tab); $('#filtros').hidden = tab === 'datos'; pintarTab(); };
+
+(async () => {
+  BP.montarUI(); BP.registrarSW();
+  await BP.bloquearSiHaceFalta(BP.leerBanco()?.cfg);
+  if (!I.fuentes.length && BP.leerBanco()) $('#usarLocal').click();
+  pintarTodo();
+  BP.actualizarCatalogo().then(ok => ok && pintarTab());
+})();
+</script>
+</body>
+</html>

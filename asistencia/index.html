@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#11845b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../icon-asistencia-192.png">
+<link rel="apple-touch-icon" href="../icon-asistencia-192.png">
+<title>Asistencia</title>
+<link rel="stylesheet" href="../nucleo.css">
+<style>
+.sesion-cab{background:var(--surface);border-radius:20px;padding:16px}
+.sesion-cab h2{margin:0;color:var(--ink);font-size:22px}
+.sesion-cab p{margin:2px 0 0;color:var(--muted)}
+.contadores{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.contadores>div{background:var(--bg);border-radius:14px;padding:10px;text-align:center}
+.contadores b{display:block;font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+.contadores small{color:var(--muted);font-weight:700}
+.ultimo{--tc-bg:var(--surface2);--tc-ink:var(--ink);display:flex;align-items:center;gap:16px;margin-top:12px;padding:18px;border-radius:22px;background:var(--tc-bg);color:var(--tc-ink);min-height:104px}
+.ultimo .u-av{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;font-size:38px;font-weight:800;background:color-mix(in srgb,currentColor 14%,transparent);flex:none}
+.ultimo b{display:block;font-size:22px;line-height:1.2}
+.ultimo span{font-weight:700;opacity:.9}
+.ultimo.vacio-u{justify-content:center;text-align:center;color:var(--muted)}
+.ultimo.pop{animation:pop .45s ease}
+@keyframes pop{0%{transform:scale(.92)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+.estado-P{background:var(--dar-bg);color:var(--dar)} .estado-T{background:var(--warn-bg);color:var(--warn)}
+.estado-J{background:var(--surface2);color:var(--ink)} .estado-A{background:var(--bad-bg);color:var(--bad)}
+.marcas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.marcas button{border:0;border-radius:14px;padding:16px;font:inherit;font-weight:800;font-size:16px}
+table.t td.c{text-align:center}
+table.t td.c span{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:8px;font-weight:800;font-size:13px}
+@media (prefers-reduced-motion:reduce){.ultimo.pop{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Asistencia</h1>
+  <button class="pill" id="pillNFC"><i></i><b>Lector</b></button>
+</header>
+
+<main>
+  <section class="tab" data-tab="sesion">
+    <div id="sinBanco" class="aviso warn" hidden><b>Primero configura el Banco de Puntos</b><p>Asistencia usa los estudiantes, la clave y tus datos del Banco de Puntos en este mismo teléfono. Ábrelo una vez y crea la clave del banco.</p><a class="sec" href="../banco/">Abrir Banco de Puntos</a></div>
+
+    <div id="nueva">
+      <div class="panel">
+        <label class="campo">Curso<select id="nCurso"></select></label>
+        <label class="campo">Clase o franja (opcional)<input id="nFranja" list="franjas" maxlength="30" placeholder="Ej. Matemáticas, 2.ª hora"><datalist id="franjas"></datalist></label>
+        <button class="grande" id="abrir">Abrir sesión</button>
+      </div>
+      <h2>Sesiones de hoy</h2>
+      <div id="hoy" class="lista"></div>
+    </div>
+
+    <div id="activa" hidden>
+      <div class="sesion-cab">
+        <h2 id="aCurso"></h2><p id="aDetalle"></p>
+        <div class="contadores">
+          <div><b id="cP" class="pos">0</b><small>A tiempo</small></div>
+          <div><b id="cT" style="color:var(--warn)">0</b><small>Tarde</small></div>
+          <div><b id="cF">0</b><small>Faltan</small></div>
+        </div>
+      </div>
+      <div id="ultimo" class="ultimo vacio-u"><div>Los estudiantes acercan su tarjeta uno tras otro.<br>Cada tarjeta cuenta una sola vez.</div></div>
+      <div class="seg" id="segLista" style="margin-top:14px"><button data-l="faltan" class="act" data-t="dar">Faltan</button><button data-l="listos" data-t="dar">Registrados</button></div>
+      <div id="lista" class="lista"></div>
+      <button class="sec" id="cerrar">Cerrar sesión</button>
+      <p class="nota">Al cerrar, quienes falten quedan como ausentes. Toca un nombre para marcarlo a mano.</p>
+    </div>
+  </section>
+
+  <section class="tab" data-tab="historial" hidden>
+    <label class="campo">Curso<select id="hCurso"></select></label>
+    <div id="hResumen" class="kpis" style="margin-top:12px"></div>
+    <div class="tabla-wrap"><table class="t" id="hTabla"></table></div>
+    <p class="nota">P: a tiempo. T: tarde. J: justificada. A: ausente. El porcentaje no cuenta las faltas justificadas.</p>
+    <button class="grande" id="compartir">Compartir asistencia (CSV)</button>
+    <button class="sec" id="descargar">Descargar CSV</button>
+  </section>
+
+  <section class="tab" data-tab="ajustes" hidden>
+    <h2>Puntos por asistir</h2>
+    <div class="panel">
+      <label class="campo">Puntos por llegar a tiempo (0 = no dar puntos)<input type="number" min="0" inputmode="numeric" data-c="puntos"></label>
+      <p class="nota">Sin puntos, la app solo lee la tarjeta y la fila avanza más rápido. Con puntos, cada estudiante debe dejar la tarjeta hasta la vibración larga.</p>
+      <label class="switch"><input type="checkbox" data-c="tambienTarde"><span>Dar puntos también a quien llega tarde</span></label>
+      <label class="campo">Motivo<select data-c="motivo" id="cfgMotivo"></select></label>
+      <label class="campo">Cuenta<select data-c="cuenta"><option value="mia">Mi cuenta</option><option value="inst">Institucional</option></select></label>
+      <p class="nota">Varias asistencias seguidas se suman en una sola línea del historial de la tarjeta, para no desplazar los demás movimientos.</p>
+    </div>
+    <h2>Llegadas tarde</h2>
+    <div class="panel">
+      <label class="campo">Minutos después de abrir la sesión para marcar «tarde» (0 = nunca)<input type="number" min="0" inputmode="numeric" data-c="minTarde"></label>
+    </div>
+    <h2>Compartido con el Banco de Puntos</h2>
+    <div class="panel">
+      <p class="nota" style="margin-top:0" id="infoBanco"></p>
+      <a class="sec" href="../banco/">Abrir Banco de Puntos</a>
+      <a class="sec" href="../informes/">Abrir Informes</a>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar"><div style="grid-template-columns:repeat(3,1fr)">
+  <button data-ir="sesion" class="act"><svg viewBox="10 0 24 24"><path d="M15 12l4 4 9-9"/></svg>Sesión</button>
+  <button data-ir="historial"><svg viewBox="10 0 24 24"><rect x="13" y="4" width="18" height="16" rx="2"/><path d="M13 9h18M19 4v16"/></svg>Historial</button>
+  <button data-ir="ajustes"><svg viewBox="10 0 24 24"><circle cx="22" cy="12" r="3"/><path d="M22 3v2.5M22 18.5V21M13 12h2.5M28.5 12H31M15.6 5.6l1.8 1.8M26.6 16.6l1.8 1.8M15.6 18.4l1.8-1.8M26.6 7.4l1.8-1.8"/></svg>Ajustes</button>
+</div></nav>
+
+<script src="../nucleo.js"></script>
+<script>
+'use strict';
+const { $, $$, esc, fmt } = BP;
+const KEY = 'asistencia.v1';
+const CFG_BASE = { puntos: 0, tambienTarde: false, motivo: 'AS', cuenta: 'mia', minTarde: 10 };
+const A = (() => { try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.sesiones) { d.cfg = Object.assign({}, CFG_BASE, d.cfg || {}); return d; } } catch (e) {} return { sesiones: [], cfg: Object.assign({}, CFG_BASE) }; })();
+const guardar = () => localStorage.setItem(KEY, JSON.stringify(A));
+const ESTADOS = { P: 'A tiempo', T: 'Tarde', J: 'Justificada', A: 'Ausente' };
+let vista = 'faltan', ocupado = false, ultimo = { uid: '', t: 0 }, modal = false;
+const banco = () => BP.leerBanco();
+const activa = () => A.sesiones.find(s => !s.cerrada);
+
+/* ---------- Lector ---------- */
+function pintarLector() {
+  const p = $('#pillNFC');
+  p.className = 'pill ' + (!BP.NFC ? 'no' : BP.lectorActivo() ? 'on' : 'off');
+  p.querySelector('b').textContent = !BP.NFC ? 'Sin NFC' : BP.lectorActivo() ? 'Lector listo' : 'Activar lector';
+}
+async function activar() {
+  if (!BP.NFC) { BP.abrirHoja(`<div class="aviso warn"><b>Este navegador no puede leer tarjetas</b><p>Usa Chrome en un Android con NFC. Aquí puedes ver el historial y marcar a mano.</p></div><button class="sec" data-x>Entendido</button>`); return false; }
+  const ok = await BP.activarLector(alLeer); pintarLector(); return ok;
+}
+$('#pillNFC').onclick = activar;
+
+/* ---------- Nueva sesión ---------- */
+function pintarNueva() {
+  const db = banco();
+  $('#sinBanco').hidden = !!(db && db.clave);
+  const cursos = BP.cursosDe(db), sel = $('#nCurso'), prev = sel.value || localStorage.getItem('asistencia.ultimoCurso') || '';
+  sel.innerHTML = cursos.length ? cursos.map(c => `<option>${esc(c)}</option>`).join('') : '<option value="">No hay cursos registrados</option>';
+  if (cursos.includes(prev)) sel.value = prev;
+  $('#franjas').innerHTML = [...new Set(A.sesiones.map(s => s.franja).filter(Boolean))].map(f => `<option value="${esc(f)}">`).join('');
+  const hoy = A.sesiones.filter(s => s.fecha === BP.hoyISO()).reverse();
+  $('#hoy').innerHTML = hoy.length ? hoy.map(s => { const r = conteo(s); return `<div class="fila-est"><span class="nm"><b>${esc(s.curso)}${s.franja ? ' · ' + esc(s.franja) : ''}</b><small>${new Date(s.inicio).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}, ${r.P + r.T} de ${r.total} presentes</small></span><span class="etq ok">Cerrada</span></div>`; }).join('') : '<p class="vacio">Aún no hay sesiones hoy.</p>';
+}
+$('#abrir').onclick = async () => {
+  const db = banco(); if (!db || !db.clave) return BP.toast('Primero configura el Banco de Puntos.');
+  const curso = $('#nCurso').value; if (!curso) return BP.toast('Registra estudiantes en el Banco de Puntos primero.');
+  localStorage.setItem('asistencia.ultimoCurso', curso);
+  A.sesiones.push({ id: Date.now().toString(36), fecha: BP.hoyISO(), inicio: new Date().toISOString(), curso, franja: $('#nFranja').value.trim(), docente: db.cfg.docente || BP.nombreDocente(db.cfg.codigoDocente), reg: {}, cerrada: false });
+  guardar(); await activar(); pintar();
+};
+
+/* ---------- Sesión activa ---------- */
+function estudiantesDe(ses, db) {
+  const lista = BP.activos(db).filter(s => s.t.curso === ses.curso).map(s => ({ uid: s.uid, t: s.t }));
+  Object.entries(ses.reg).forEach(([uid, r]) => { if (!lista.some(x => x.uid === uid)) lista.push({ uid, t: db?.students[uid]?.t || { nombre: r.nombre, curso: r.curso, cuentas: [] } }); });
+  return lista.sort((a, b) => a.t.nombre.localeCompare(b.t.nombre, 'es'));
+}
+function conteo(ses, db = banco()) {
+  const est = estudiantesDe(ses, db), r = { P: 0, T: 0, J: 0, A: 0, total: est.length };
+  est.forEach(x => { const e = ses.reg[x.uid]?.e; if (e) r[e]++; });
+  r.faltan = est.filter(x => !ses.reg[x.uid]).length; return r;
+}
+function pintarActiva() {
+  const ses = activa(), db = banco();
+  $('#nueva').hidden = !!ses; $('#activa').hidden = !ses;
+  if (!ses) return pintarNueva();
+  $('#aCurso').textContent = ses.curso + (ses.franja ? ' · ' + ses.franja : '');
+  const ini = new Date(ses.inicio);
+  $('#aDetalle').textContent = `Abierta a las ${ini.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}` + (A.cfg.minTarde ? `. Desde las ${new Date(ini.getTime() + A.cfg.minTarde * 60000).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })} cuenta como tarde.` : '.') + (A.cfg.puntos ? ` Da ${A.cfg.puntos} puntos.` : '');
+  const r = conteo(ses, db);
+  $('#cP').textContent = r.P; $('#cT').textContent = r.T; $('#cF').textContent = r.faltan;
+  $$('#segLista button').forEach(b => b.classList.toggle('act', b.dataset.l === vista));
+  const est = estudiantesDe(ses, db).filter(x => vista === 'faltan' ? !ses.reg[x.uid] : !!ses.reg[x.uid]);
+  if (vista === 'listos') est.sort((a, b) => (ses.reg[b.uid].h || '').localeCompare(ses.reg[a.uid].h || ''));
+  $('#lista').innerHTML = est.length ? est.map(x => { const g = ses.reg[x.uid];
+    return `<button class="fila-est" data-uid="${esc(x.uid)}">${BP.avatar(x.t)}<span class="nm"><b>${esc(x.t.nombre)}</b><small>${g ? (g.manual ? 'Marcado a mano' : new Date(g.h).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })) + (g.puntos ? `, +${g.puntos} pts` : '') : esc(x.t.curso || '')}</small></span>${g ? `<span class="etq estado-${g.e}">${ESTADOS[g.e]}</span>` : ''}</button>`; }).join('')
+    : `<p class="vacio">${vista === 'faltan' ? '¡Están todos!' : 'Todavía nadie ha pasado la tarjeta.'}</p>`;
+}
+$('#segLista').onclick = e => { const b = e.target.closest('[data-l]'); if (!b) return; vista = b.dataset.l; pintarActiva(); };
+$('#lista').onclick = e => {
+  const b = e.target.closest('[data-uid]'); if (!b) return;
+  const ses = activa(), db = banco(), uid = b.dataset.uid, x = estudiantesDe(ses, db).find(y => y.uid === uid);
+  const c = BP.abrirHoja(`<div class="fila-est" style="margin:0 0 6px">${BP.avatar(x.t)}<span class="nm"><b>${esc(x.t.nombre)}</b><small>${esc(x.t.curso || '')}</small></span></div>
+    <p class="nota">Marcar a mano no da puntos; los puntos solo se dan al pasar la tarjeta.</p>
+    <div class="marcas">${Object.entries(ESTADOS).map(([k, v]) => `<button class="estado-${k}" data-e="${k}">${v}</button>`).join('')}</div>
+    ${ses.reg[uid] ? '<button class="sec" data-e="quitar">Quitar el registro</button>' : ''}<button class="sec" data-x>Cancelar</button>`);
+  c.onclick = ev => {
+    const k = ev.target.closest('[data-e]')?.dataset.e; if (!k) return;
+    if (k === 'quitar') { if (ses.reg[uid]?.puntos && !confirm('Este registro dio puntos en la tarjeta. Quitarlo no los devuelve; para eso usa el Banco de Puntos. ¿Quitar de todos modos?')) return; delete ses.reg[uid]; }
+    else ses.reg[uid] = Object.assign(ses.reg[uid] || { h: new Date().toISOString(), nombre: x.t.nombre, curso: x.t.curso, manual: true }, { e: k });
+    guardar(); BP.cerrarHoja(); pintarActiva();
+  };
+};
+$('#cerrar').onclick = () => {
+  const ses = activa(), db = banco(), r = conteo(ses, db);
+  if (!confirm(`Cerrar la sesión de ${ses.curso}. ${r.faltan} ${r.faltan === 1 ? 'estudiante queda' : 'estudiantes quedan'} como ausentes. ¿Continuar?`)) return;
+  estudiantesDe(ses, db).forEach(x => { if (!ses.reg[x.uid]) ses.reg[x.uid] = { e: 'A', h: new Date().toISOString(), nombre: x.t.nombre, curso: x.t.curso, manual: true }; });
+  ses.cerrada = true; ses.fin = new Date().toISOString(); guardar();
+  const f = conteo(ses, db);
+  BP.abrirHoja(`<div class="resultado"><div class="quien">Sesión cerrada</div><p class="nota">${esc(ses.curso)}${ses.franja ? ' · ' + esc(ses.franja) : ''}</p></div>
+    <div class="kpis"><div><b class="pos">${f.P}</b><small>a tiempo</small></div><div><b style="color:var(--warn)">${f.T}</b><small>tarde</small></div><div><b>${f.J}</b><small>justificadas</small></div><div><b class="neg">${f.A}</b><small>ausentes</small></div></div>
+    <button class="grande" data-x>Listo</button>`);
+  vista = 'faltan'; pintar();
+};
+
+/* ---------- Lectura de tarjetas ---------- */
+function confirmar(html, si, no) {
+  return new Promise(res => {
+    modal = true;
+    const c = BP.abrirHoja(html + `<button class="grande" data-r="si">${si}</button><button class="sec" data-r="no">${no}</button>`, true);
+    c.querySelector('[data-r=si]').onclick = () => { modal = false; BP.cerrarHoja(); res(true); };
+    c.querySelector('[data-r=no]').onclick = () => { modal = false; BP.cerrarHoja(); res(false); };
+  });
+}
+const SALUDOS = ['¡Qué bueno verte', '¡Bienvenida y bienvenido', '¡Llegaste', '¡Presente', '¡Hola'];
+function feedback(t, texto, tipo) {
+  const u = $('#ultimo'); u.className = 'ultimo'; void u.offsetWidth; u.classList.add('pop');
+  if (t) u.setAttribute('style', BP.estilo(t)); else u.removeAttribute('style');
+  u.innerHTML = `<div class="u-av">${t ? (BP.emojiDe(t) || esc(BP.iniciales(t.nombre))) : '!'}</div><div><b>${esc(t ? t.nombre : 'Tarjeta no reconocida')}</b><span>${esc(texto)}</span></div>`;
+  BP.sonar(tipo);
+}
+async function alLeer(e) {
+  if (ocupado || modal) return;
+  const ses = activa(); if (!ses) { BP.toast('Abre una sesión primero.'); return; }
+  const { uid, p } = BP.leerNFC(e);
+  if (!uid || (uid === ultimo.uid && Date.now() - ultimo.t < 2500)) return;
+  ocupado = true; BP.vibrar(40);
+  try {
+    const db = banco(); if (!db || !db.clave) { BP.toast('Primero configura el Banco de Puntos.'); return; }
+    const ev = await BP.evaluar(db, uid, p);
+    if (ev.estado === 'bloqueada') { feedback(ev.s.t, 'Esta tarjeta fue reemplazada. Usa la nueva.', 'error'); return; }
+    const conocido = ev.estado === 'ok' ? ev.t : ev.s?.t;
+    if (!conocido) { feedback(null, 'No está registrada. Regístrala en el Banco de Puntos.', 'error'); return; }
+    if (ses.reg[uid] && ses.reg[uid].e !== 'A') { feedback(conocido, `Ya estaba registrado: ${ESTADOS[ses.reg[uid].e].toLowerCase()}.`, 'neutro'); return; }
+    if (conocido.curso !== ses.curso && !(await confirmar(`<div class="aviso warn"><b>${esc(conocido.nombre)} es de ${esc(conocido.curso || 'otro curso')}</b><p>Esta sesión es de ${esc(ses.curso)}.</p></div>`, 'Registrar de todos modos', 'Cancelar'))) return;
+    const estado = A.cfg.minTarde && (Date.now() - new Date(ses.inicio)) / 60000 > A.cfg.minTarde ? 'T' : 'P';
+    let puntos = A.cfg.puntos > 0 && (estado === 'P' || A.cfg.tambienTarde) ? A.cfg.puntos : 0, nota = '';
+    if (ev.estado !== 'ok') { puntos = 0; nota = ' La tarjeta necesita revisión en el Banco de Puntos.'; }
+    if (ev.estado === 'ok') {
+      const { t, movs } = BP.prepararT(db, ev);
+      if (puntos) {
+        const cuenta = A.cfg.cuenta === 'inst' && db.cfg.usarInstitucional ? 0 : db.cfg.codigoDocente;
+        BP.aplicarAsistencia(t, puntos, A.cfg.motivo, cuenta, db.cfg.codigoDocente);
+        movs.push(BP.movLocal(uid, t, 'dar', puntos, A.cfg.motivo, ses.franja ? 'Asistencia ' + ses.franja : 'Asistencia', cuenta, db.cfg));
+        await BP.escribirTarjeta(db, uid, t);
+        db.students[uid].t = BP.clon(t); db.students[uid].actualizado = new Date().toISOString(); movs.forEach(m => db.movs.push(m));
+      }
+      BP.guardarBanco(db);
+    }
+    ses.reg[uid] = { e: estado, h: new Date().toISOString(), nombre: conocido.nombre, curso: conocido.curso, puntos };
+    guardar();
+    const saludo = SALUDOS[Math.floor(Math.random() * SALUDOS.length)];
+    feedback(conocido, (estado === 'P' ? `${saludo}! A tiempo` : 'Llegada tarde') + (puntos ? `, +${puntos} puntos` : '') + '.' + nota, estado === 'P' ? 'dar' : 'neutro');
+    if (conteo(ses, db).faltan === 0) setTimeout(() => { BP.sonar('fiesta'); BP.toast('¡Ya pasaron todos!'); }, 500);
+  } catch (err) {
+    BP.sonar('error'); BP.vibrar([80, 60, 80]);
+    BP.abrirHoja(`<div class="aviso bad"><b>No se completó</b><p>${esc(err.message)}</p></div><p class="nota">No se registró la asistencia. Que acerque la tarjeta otra vez.</p><button class="sec" data-x>Cerrar</button>`);
+  } finally { ultimo = { uid, t: Date.now() }; ocupado = false; pintarActiva(); }
+}
+
+/* ---------- Historial ---------- */
+const filasCSV = ses => Object.entries(ses.reg).map(([uid, r]) => ({ sesion: ses.id, fecha: ses.fecha, inicio: ses.inicio, curso: ses.curso, franja: ses.franja || '', docente: ses.docente || '', uid, nombre: r.nombre, estado: r.e, estado_nombre: ESTADOS[r.e], hora: r.h, puntos: r.puntos || 0 }));
+const COLS = ['sesion', 'fecha', 'inicio', 'curso', 'franja', 'docente', 'uid', 'nombre', 'estado', 'estado_nombre', 'hora', 'puntos'];
+const csvTodo = () => BP.aCSV(A.sesiones.filter(s => s.cerrada).flatMap(filasCSV), COLS);
+function pintarHistorial() {
+  const db = banco(), cursos = [...new Set(A.sesiones.map(s => s.curso))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+  const sel = $('#hCurso'), prev = sel.value;
+  sel.innerHTML = cursos.length ? cursos.map(c => `<option>${esc(c)}</option>`).join('') : '<option value="">Sin sesiones todavía</option>';
+  if (cursos.includes(prev)) sel.value = prev;
+  const curso = sel.value, ses = A.sesiones.filter(s => s.curso === curso && s.cerrada).sort((a, b) => a.inicio.localeCompare(b.inicio));
+  if (!ses.length) { $('#hTabla').innerHTML = ''; $('#hResumen').innerHTML = '<p class="vacio">Cierra una sesión para ver el historial.</p>'; return; }
+  const uids = new Map();
+  BP.activos(db).filter(s => s.t.curso === curso).forEach(s => uids.set(s.uid, s.t.nombre));
+  ses.forEach(s => Object.entries(s.reg).forEach(([u, r]) => { if (!uids.has(u)) uids.set(u, r.nombre); }));
+  const filas = [...uids.entries()].sort((a, b) => a[1].localeCompare(b[1], 'es')).map(([u, n]) => {
+    const marcas = ses.map(s => s.reg[u]?.e || ''); const cont = { P: 0, T: 0, J: 0, A: 0 }; marcas.forEach(m => m && cont[m]++);
+    const base = marcas.filter(Boolean).length - cont.J; return { n, marcas, pct: base ? (cont.P + cont.T) / base : null };
+  });
+  const prom = filas.filter(f => f.pct !== null), media = prom.length ? prom.reduce((a, f) => a + f.pct, 0) / prom.length : 0;
+  $('#hResumen').innerHTML = `<div><b>${ses.length}</b><small>sesiones</small></div><div><b>${BP.pct(media)}</b><small>asistencia promedio</small></div><div><b>${filas.filter(f => f.pct !== null && f.pct < .8).length}</b><small>bajo el 80 %</small></div>`;
+  $('#hTabla').innerHTML = `<thead><tr><th>Estudiante</th>${ses.map(s => `<th class="c" title="${esc(s.franja || '')}">${BP.fechaCorta(s.fecha)}</th>`).join('')}<th class="n">%</th></tr></thead><tbody>`
+    + filas.map(f => `<tr><td>${esc(f.n)}</td>${f.marcas.map(m => `<td class="c">${m ? `<span class="estado-${m}">${m}</span>` : ''}</td>`).join('')}<td class="n"><b class="${f.pct !== null && f.pct < .8 ? 'neg' : ''}">${f.pct === null ? '–' : BP.pct(f.pct)}</b></td></tr>`).join('') + '</tbody>';
+}
+$('#hCurso').onchange = pintarHistorial;
+$('#compartir').onclick = () => BP.compartirArchivos([{ nombre: `asistencia-${BP.hoyISO()}.csv`, texto: csvTodo() }], 'Asistencia');
+$('#descargar').onclick = () => BP.descargar(`asistencia-${BP.hoyISO()}.csv`, csvTodo());
+
+/* ---------- Ajustes ---------- */
+function pintarAjustes() {
+  const db = banco();
+  $('#cfgMotivo').innerHTML = BP.cat.motivos.filter(m => !m.tipo || m.tipo !== 'cobrar').map(m => `<option value="${esc(m.codigo)}">${esc(m.nombre)}</option>`).join('');
+  $$('[data-c]').forEach(el => { const k = el.dataset.c; if (el.type === 'checkbox') el.checked = !!A.cfg[k]; else el.value = A.cfg[k]; });
+  $('#infoBanco').textContent = db ? `Usa los estudiantes, la clave, tu número de docente (${db.cfg.codigoDocente}) y la lista de cursos del Banco de Puntos de este teléfono. Para cambiarlos, hazlo allá.` : 'No hay datos del Banco de Puntos en este teléfono.';
+}
+$$('[data-c]').forEach(el => el.addEventListener('change', () => {
+  const k = el.dataset.c; A.cfg[k] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? Math.max(0, parseInt(el.value, 10) || 0) : el.value;
+  guardar(); pintarActiva();
+}));
+
+/* ---------- Navegación ---------- */
+let desbloqueado = 0;
+async function irA(t) {
+  const db = banco();
+  if (t === 'ajustes' && db?.cfg.pinDocente && Date.now() > desbloqueado) {
+    const pin = await BP.pedirPIN({ titulo: 'PIN del docente', texto: 'Para entrar a Ajustes.' });
+    if (!(await BP.pinDocenteCorrecto(db.cfg, pin))) { if (pin !== null) BP.toast('PIN incorrecto.'); return; }
+    desbloqueado = Date.now() + 5 * 60e3;
+  }
+  $$('.tab').forEach(s => s.hidden = s.dataset.tab !== t);
+  $$('.tabbar button').forEach(b => b.classList.toggle('act', b.dataset.ir === t));
+  if (t === 'historial') pintarHistorial(); if (t === 'ajustes') pintarAjustes(); if (t === 'sesion') pintarActiva();
+  scrollTo(0, 0);
+}
+$$('.tabbar button').forEach(b => b.onclick = () => irA(b.dataset.ir));
+const pintar = () => { pintarActiva(); pintarLector(); };
+window.addEventListener('storage', e => { if (e.key === 'bancoPuntos.v2') pintarActiva(); });
+
+(async () => {
+  BP.montarUI(); BP.registrarSW(); pintar();
+  BP.actualizarCatalogo().then(pintarAjustes);
+  await BP.bloquearSiHaceFalta(banco()?.cfg);
+  if (BP.NFC && await BP.permisoNFC()) { await BP.activarLector(alLeer); pintarLector(); }
+})();
+</script>
+</body>
+</html>

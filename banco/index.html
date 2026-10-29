@@ -1,0 +1,1535 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<title>Banco de Puntos</title>
+<style>
+:root{
+  --bg:#eef2f7; --surface:#ffffff; --surface2:#e1e7f0; --ink:#14213d; --muted:#56627a; --line:#d3dae6;
+  --brand:#14213d; --on-brand:#ffffff; --card:#ffc93c; --on-card:#14213d;
+  --dar:#11845b; --on-dar:#ffffff; --dar-bg:#d8f0e5;
+  --cobrar:#c8102e; --on-cobrar:#ffffff; --cobrar-bg:#f8dade;
+  --canje:#5b3fc4; --on-canje:#ffffff;
+  --warn:#8a5a00; --warn-bg:#fff0c7; --bad:#a3122a; --bad-bg:#f8dade;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0d1424; --surface:#16203a; --surface2:#222e4d; --ink:#e7ecf6; --muted:#9aa6c0; --line:#2b3858;
+    --brand:#ffc93c; --on-brand:#14213d;
+    --dar:#4fd39a; --on-dar:#062418; --dar-bg:#123a2b;
+    --cobrar:#ff7a8a; --on-cobrar:#2a0610; --cobrar-bg:#3d1520;
+    --canje:#b4a2ff; --on-canje:#1a1040;
+    --warn:#ffd36b; --warn-bg:#3a2f12; --bad:#ff8a9a; --bad-bg:#3d1520;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 ui-rounded,"SF Pro Rounded","Nunito","Varela Round",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--card);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top,0px) + 12px) 18px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:560px;margin:0 auto}
+header h1{font-size:21px;margin:0;font-weight:800;letter-spacing:-.01em}
+.pill{border:0;border-radius:999px;padding:8px 12px;font:inherit;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:7px;background:var(--surface2);color:var(--muted)}
+.pill i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.on{background:var(--dar-bg);color:var(--dar)}
+.pill.off{background:var(--warn-bg);color:var(--warn)}
+.pill.no{background:var(--bad-bg);color:var(--bad)}
+
+main{padding:4px 18px calc(env(safe-area-inset-bottom,0px) + 180px);max-width:560px;margin:0 auto}
+h2{font-size:15px;color:var(--muted);margin:24px 0 10px;font-weight:700}
+.panel{background:var(--surface);border-radius:20px;padding:16px}
+.sep{height:1px;background:var(--line);margin:16px 0}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface2);border-radius:16px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;font:inherit;font-weight:800;font-size:16px;padding:13px 6px;border-radius:12px;color:var(--muted)}
+.seg button.act[data-t=dar]{background:var(--dar);color:var(--on-dar)}
+.seg button.act[data-t=cobrar]{background:var(--cobrar);color:var(--on-cobrar)}
+.seg button.act[data-t=canje]{background:var(--canje);color:var(--on-canje)}
+
+.monto{display:flex;align-items:center;gap:8px;margin-top:14px;padding:14px}
+.monto>div{flex:1;text-align:center}
+.monto input{width:100%;border:0;background:transparent;text-align:center;font:inherit;font-size:64px;font-weight:800;color:var(--ink);letter-spacing:-.03em;padding:0;line-height:1.1}
+.monto small{display:block;color:var(--muted);font-weight:600}
+.redondo{width:54px;height:54px;border-radius:50%;border:0;background:var(--surface2);font:inherit;font-size:28px;font-weight:700;color:var(--ink);flex:none}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;font-weight:700}
+
+.canjes{display:grid;gap:8px}
+.canje{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:16px;padding:14px 16px;font:inherit;font-weight:700}
+.canje.act{border-color:var(--canje)}
+.canje b{font-size:18px;white-space:nowrap}
+
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
+select{appearance:auto}
+label.campo{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-top:12px}
+label.campo:first-child{margin-top:0}
+label.campo input,label.campo select{margin-top:6px}
+.switch{display:flex;gap:12px;align-items:flex-start;margin:16px 0 4px;font-weight:700}
+.switch input{width:22px;height:22px;margin-top:2px;accent-color:var(--dar);flex:none}
+.switch small{display:block;font-weight:500;color:var(--muted)}
+.switch.apagado{opacity:.5}
+.opcion{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.opcion small{display:block;color:var(--muted);font-weight:500}
+.mini{border:0;background:var(--surface2);color:var(--ink);font:inherit;font-weight:800;padding:10px 14px;border-radius:12px;flex:none}
+
+.grande{width:100%;border:0;border-radius:18px;padding:18px;font:inherit;font-size:18px;font-weight:800;background:var(--brand);color:var(--on-brand);margin-top:14px}
+.grande.dar{background:var(--dar);color:var(--on-dar)}
+.grande.cobrar{background:var(--cobrar);color:var(--on-cobrar)}
+.grande.canje{background:var(--canje);color:var(--on-canje)}
+.sec{width:100%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px;font:inherit;font-weight:700;margin-top:10px;display:block;text-align:center}
+.peligro{color:var(--bad)}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(env(safe-area-inset-bottom,0px) + 6px)}
+.tabbar>div{display:grid;grid-template-columns:repeat(4,1fr);max-width:560px;margin:0 auto}
+.tabbar button{border:0;background:none;font:inherit;font-size:12px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0}
+.tabbar button.act{color:var(--ink)}
+.tabbar button.act svg{background:var(--card);color:#14213d;border-radius:10px}
+.tabbar svg{width:44px;height:28px;padding:2px 10px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.armado{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 78px);z-index:7;display:flex;align-items:center;gap:10px;padding:12px 12px 12px 14px;border-radius:20px;background:var(--brand);color:var(--on-brand);box-shadow:0 12px 32px rgba(10,20,40,.3);max-width:536px;margin:0 auto}
+.armado.dar{background:var(--dar);color:var(--on-dar)}
+.armado.cobrar{background:var(--cobrar);color:var(--on-cobrar)}
+.armado.canje{background:var(--canje);color:var(--on-canje)}
+.armado .txt{flex:1;min-width:0}
+.armado b{display:block;font-size:17px;line-height:1.2}
+.armado small{display:block;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.armado button{border:0;background:rgba(255,255,255,.22);color:inherit;font:inherit;font-weight:800;padding:10px 12px;border-radius:12px}
+.pulso{position:relative;width:38px;height:38px;flex:none;display:grid;place-items:center}
+.pulso svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.pulso::before,.pulso::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid currentColor;animation:pulso 1.6s ease-out infinite;opacity:0}
+.pulso::after{animation-delay:.8s}
+@keyframes pulso{0%{transform:scale(.55);opacity:.9}100%{transform:scale(1.45);opacity:0}}
+
+.hoja{position:fixed;inset:0;z-index:10}
+.hoja-fondo{position:absolute;inset:0;background:rgba(8,14,30,.45);opacity:0;transition:opacity .2s}
+.hoja-panel{position:absolute;left:0;right:0;bottom:0;max-height:92%;overflow:auto;background:var(--bg);border-radius:26px 26px 0 0;padding:10px 18px calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateY(100%);transition:transform .24s ease;max-width:560px;margin:0 auto}
+.hoja.completa .hoja-fondo{background:var(--bg)}
+.hoja.completa .hoja-panel{top:0;max-height:none;border-radius:0;display:flex;flex-direction:column;justify-content:center;padding-top:calc(env(safe-area-inset-top,0px) + 20px)}
+.hoja.abierta .hoja-fondo{opacity:1}
+.hoja.abierta .hoja-panel{transform:none}
+.hoja:not(.completa) .hoja-panel::before{content:"";display:block;width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
+.hoja h3{font-size:15px;color:var(--muted);margin:22px 0 8px}
+
+.tarjeta{--tc-bg:var(--card);--tc-ink:var(--on-card);position:relative;overflow:hidden;border-radius:22px;padding:18px 20px;color:var(--tc-ink);background:var(--tc-bg);aspect-ratio:1.586;display:flex;flex-direction:column;box-shadow:0 14px 30px rgba(20,33,61,.22);transition:background .2s,color .2s}
+.tarjeta::before{content:"";position:absolute;right:-18%;top:-40%;width:75%;aspect-ratio:1;border-radius:50%;background:repeating-radial-gradient(circle,transparent 0 10px,color-mix(in srgb,currentColor 12%,transparent) 10px 12px)}
+.t-emoji{position:absolute;right:22px;top:46px;font-size:54px;line-height:1}
+.t-top{position:relative;display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:800}
+.t-saldo{position:relative;margin-top:auto;font-size:52px;font-weight:800;line-height:1;letter-spacing:-.03em}
+.t-saldo small{font-size:17px;font-weight:700;margin-left:6px}
+.t-nom{position:relative;margin-top:10px;font-size:18px;font-weight:800}
+.t-cur{position:relative;font-size:14px;font-weight:600;opacity:.8}
+.badge{font-size:12px;padding:4px 9px;border-radius:999px;background:var(--tc-ink);color:var(--tc-bg);font-weight:700}
+.badge.gris{background:color-mix(in srgb,currentColor 16%,transparent);color:inherit}
+.paleta{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.paleta button{aspect-ratio:1;border-radius:50%;border:3px solid transparent;font:inherit;font-size:13px;font-weight:800}
+.paleta button.act{border-color:var(--ink);box-shadow:0 0 0 2px var(--bg) inset}
+.emojis{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.emojis button{aspect-ratio:1;border:2px solid transparent;background:var(--surface);border-radius:12px;font-size:22px;padding:0;color:var(--muted)}
+.emojis button.act{border-color:var(--ink)}
+.fijado{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border-radius:16px;padding:8px 8px 8px 12px;margin-bottom:12px}
+.fijado span{display:flex;align-items:center;gap:10px;font-weight:700;min-width:0}
+.fijado button{border:0;background:var(--surface2);color:var(--ink);font:inherit;font-weight:800;padding:8px 12px;border-radius:10px}
+.cifras{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.cifras>div{background:var(--surface);border-radius:14px;padding:10px 14px}
+.cifras b{display:block;font-size:20px}
+.cifras small{color:var(--muted);font-weight:600}
+
+.aviso{border-radius:16px;padding:14px 16px;margin-bottom:14px;background:var(--surface2)}
+.aviso b{display:block;font-size:17px}
+.aviso p{margin:4px 0 0;color:var(--ink)}
+.aviso.warn{background:var(--warn-bg)} .aviso.warn b{color:var(--warn)}
+.aviso.bad{background:var(--bad-bg)} .aviso.bad b{color:var(--bad)}
+.nota{font-size:14px;color:var(--muted)}
+
+.movs .mov{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.movs .mov:last-child{border-bottom:0}
+.mov small{display:block;color:var(--muted);font-size:13px}
+.mov i{display:block;font-style:normal;font-size:13px;color:var(--ink);opacity:.8}
+.pos{color:var(--dar);font-weight:800;font-size:17px;white-space:nowrap}
+.neg{color:var(--cobrar);font-weight:800;font-size:17px;white-space:nowrap}
+.cero{color:var(--muted);font-weight:700}
+
+.lista{margin-top:4px}
+.fila-est{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:0;border-radius:16px;padding:10px 14px;margin-top:8px;font:inherit;color:var(--ink)}
+.av{--tc-bg:var(--card);--tc-ink:var(--on-card);width:40px;height:40px;border-radius:50%;background:var(--tc-bg);display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--tc-ink);flex:none}
+.av.e{font-size:22px}
+.nm{flex:1;min-width:0}
+.nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm small{color:var(--muted)}
+.sd{font-weight:800;font-size:19px}
+.resumen{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.resumen>div{background:var(--surface);border-radius:18px;padding:14px 16px}
+.resumen b{font-size:30px;display:block;line-height:1.1}
+.resumen small{color:var(--muted);font-weight:600}
+.vacio{color:var(--muted);text-align:center;padding:22px 8px}
+
+.espera{text-align:center;padding:28px 20px}
+.espera svg{width:120px;height:120px;fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.espera svg .onda{stroke:var(--dar)}
+.espera p{font-size:18px;margin:14px 0 6px}
+
+.resultado{text-align:center;padding:4px 0 6px}
+.delta{font-size:72px;font-weight:800;line-height:1;letter-spacing:-.03em}
+.resultado .quien{font-size:20px;font-weight:800;margin-top:10px}
+.resultado .cambio{font-size:17px;color:var(--muted);margin-top:4px}
+
+.fila2{display:grid;grid-template-columns:100px 1fr;gap:8px;margin-top:10px}
+.fila2 input{font-size:22px;font-weight:800;text-align:center}
+.stack>*+*{margin-top:10px}
+.archivo{position:relative}
+.archivo input{position:absolute;inset:0;opacity:0;width:100%}
+
+.pin{text-align:center;max-width:340px;margin:0 auto;width:100%}
+.pin-t{display:block;font-size:20px;font-weight:800}
+.pin-d{display:flex;justify-content:center;gap:14px;margin:18px 0 22px;min-height:18px}
+.pin-d i{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink)}
+.pin-d i.on{background:var(--ink)}
+.teclado{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.teclado button{border:0;background:var(--surface);color:var(--ink);font:inherit;font-size:26px;font-weight:700;padding:16px 0;border-radius:16px}
+.teclado .ok{background:var(--brand);color:var(--on-brand);font-size:18px;font-weight:800}
+
+.cuentas{background:var(--surface);border-radius:16px;padding:4px 14px;margin-top:10px}
+.cuentas>div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.cuentas>div:last-child{border-bottom:0}
+.cuentas b{font-size:18px}
+.cuentas .mia span{font-weight:800}
+.cuentas small{color:var(--muted);font-weight:600}
+.cuentaSel{margin-top:12px}
+.cuentaSel>span{display:block;font-weight:700;color:var(--muted);font-size:14px;margin:0 0 6px 2px}
+.seg.mini button{font-size:14px;padding:9px 6px}
+.seg button.act[data-c]{background:var(--ink);color:var(--bg)}
+.cubierta{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(8,14,30,.55);padding:24px}
+.cub-panel{background:var(--surface);color:var(--ink);border-radius:24px;padding:28px 24px;text-align:center;max-width:320px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.cub-panel b{display:block;font-size:22px;margin-top:16px}
+.cub-panel small{display:block;color:var(--muted);font-size:15px;margin-top:6px}
+.cub-anillo{width:72px;height:72px;margin:0 auto;border-radius:50%;border:7px solid var(--surface2);border-top-color:var(--dar);animation:girar .8s linear infinite}
+.cubierta.aviso-lectura .cub-anillo{animation:none;border-color:var(--warn-bg);border-top-color:var(--warn)}
+@keyframes girar{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 160px);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;z-index:30;width:max-content;max-width:88%;font-size:15px;font-weight:700;text-align:center}
+
+@media (prefers-reduced-motion:reduce){
+  .cub-anillo{animation-duration:2.4s}
+  .pulso::before,.pulso::after{animation:none}
+  .hoja-panel,.hoja-fondo{transition:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Banco de Puntos</h1>
+  <button class="pill" id="pillNFC"><i></i><b>Lector</b></button>
+</header>
+
+<main>
+  <!-- TRANSFERIR -->
+  <section class="tab" data-tab="mover">
+    <div class="fijado" id="fijado" hidden><span id="fijadoNom"></span><button id="quitarFijado">Quitar</button></div>
+    <div class="seg" id="segTipo">
+      <button data-t="dar" class="act">Dar</button>
+      <button data-t="cobrar">Cobrar</button>
+      <button data-t="canje" hidden>Canjear</button>
+    </div>
+    <div class="cuentaSel" id="cuentaSel"><span>Desde la cuenta</span>
+      <div class="seg mini" id="segCuenta"><button data-c="mia" class="act">Mi cuenta</button><button data-c="inst">Institucional</button></div>
+    </div>
+    <p class="nota" id="cuentaCanje" hidden></p>
+
+    <div id="bloqueNormal">
+      <div class="panel monto">
+        <button class="redondo" id="menos" aria-label="Restar uno">−</button>
+        <div>
+          <input id="puntos" class="num" inputmode="numeric" value="10" aria-label="Puntos">
+          <small>puntos</small>
+        </div>
+        <button class="redondo" id="mas" aria-label="Sumar uno">+</button>
+      </div>
+      <div class="chips" id="chipsMonto">
+        <button class="chip" data-p="1">1</button><button class="chip" data-p="5">5</button>
+        <button class="chip" data-p="10">10</button><button class="chip" data-p="20">20</button>
+        <button class="chip" data-p="50">50</button><button class="chip" data-p="100">100</button>
+      </div>
+      <h2>Motivo</h2>
+      <select id="motivo" aria-label="Motivo"></select>
+    </div>
+
+    <div id="bloqueCanje" hidden>
+      <h2>Qué canjea</h2>
+      <div id="listaCanjes" class="canjes"></div>
+    </div>
+
+    <input id="obs" placeholder="Observación (opcional, queda en este teléfono)" maxlength="80" style="margin-top:10px">
+
+    <label class="switch" id="swContinuo">
+      <input type="checkbox" id="continuo">
+      <span>Varios estudiantes seguidos
+        <small id="continuoNota">El mismo movimiento se aplica a cada tarjeta que acerques, por ejemplo la asistencia de todo el curso.</small>
+      </span>
+    </label>
+    <label class="campo" id="bloqueCurso" hidden>Curso<select id="cursoLote"></select></label>
+
+    <button class="grande dar" id="btnArmar">Dar 10 puntos</button>
+  </section>
+
+  <!-- CONSULTAR -->
+  <section class="tab" data-tab="consultar" hidden>
+    <div class="panel espera">
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <rect x="34" y="20" width="44" height="80" rx="8"/>
+        <line x1="50" y1="90" x2="62" y2="90"/>
+        <path class="onda" d="M86 46c6 8 6 20 0 28"/><path class="onda" d="M96 38c11 13 11 31 0 44"/>
+      </svg>
+      <p><b>Acerca una tarjeta</b> a la parte de atrás del teléfono.</p>
+      <small class="nota">Verás el saldo y su historial, y podrás dar o cobrar puntos. Funciona desde cualquier pestaña cuando no hay un movimiento preparado.</small>
+    </div>
+    <h2>Consultadas en esta sesión</h2>
+    <div id="recientes" class="lista"></div>
+  </section>
+
+  <!-- ESTUDIANTES -->
+  <section class="tab" data-tab="estudiantes" hidden>
+    <div class="resumen">
+      <div><b id="nEst" class="num">0</b><small>estudiantes</small></div>
+      <div><b id="sumPts" class="num">0</b><small>puntos en circulación</small></div>
+    </div>
+    <button class="grande" id="btnRegistrar">Registrar tarjeta nueva</button>
+    <input id="buscar" type="search" placeholder="Buscar por nombre o curso" style="margin-top:16px">
+    <div id="listaEst" class="lista"></div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section class="tab" data-tab="ajustes" hidden>
+    <h2>Seguridad</h2>
+    <div class="panel">
+      <label class="campo">Clave del banco<input id="cfgClave" type="password" autocomplete="off"></label>
+      <p class="nota">Firma cada tarjeta para detectar cambios hechos fuera de la app. Todos los docentes que usen las mismas tarjetas deben tener la misma clave.</p>
+      <button class="sec" id="guardarClave">Guardar clave</button>
+      <div class="sep"></div>
+      <div class="opcion"><span><b>PIN del docente</b><small id="pinDocEstado"></small></span><button class="mini" id="btnPinDoc"></button></div>
+      <div id="pinDocOpc">
+        <label class="switch"><input type="checkbox" data-cfg="pinAlAbrir"><span>Pedirlo al abrir la app<small>También al volver después de 2 minutos fuera de la app.</small></span></label>
+        <label class="switch"><input type="checkbox" data-cfg="pinCadaMov"><span>Pedirlo en cada movimiento<small>Antes de dar, cobrar, canjear, deshacer o cambiar tarjetas.</small></span></label>
+        <button class="sec peligro" id="quitarPinDoc">Quitar PIN del docente</button>
+      </div>
+      <div class="sep"></div>
+      <label class="switch"><input type="checkbox" data-cfg="pinEstudiantes"><span>PIN de estudiantes para cobros y canjes<small>El estudiante escribe su PIN de 4 dígitos antes de acercar la tarjeta. Si aún no tiene, el que escriba en su primer cobro queda como su PIN.</small></span></label>
+    </div>
+
+    <h2>Movimientos</h2>
+    <div class="panel">
+      <label class="campo">Tope por movimiento (0 = sin tope)<input type="number" min="0" inputmode="numeric" data-cfg="tope"></label>
+      <label class="campo">Pedir confirmación desde (0 = nunca)<input type="number" min="0" inputmode="numeric" data-cfg="confirmarDesde"></label>
+      <label class="switch"><input type="checkbox" data-cfg="usarInstitucional"><span>Usar la cuenta institucional<small>Además de tu cuenta, puedes dar y cobrar puntos de la cuenta común del colegio.</small></span></label>
+      <label class="switch"><input type="checkbox" data-cfg="deshacer"><span>Permitir deshacer<small>Hasta 10 minutos después, si la tarjeta no ha tenido otro movimiento.</small></span></label>
+      <label class="switch"><input type="checkbox" data-cfg="verificar"><span>Confirmar con un segundo toque<small>Tras cada movimiento, vuelves a acercar la tarjeta para comprobar que quedó bien escrita.</small></span></label>
+      <label class="switch"><input type="checkbox" data-cfg="listaCurso"><span>Lista del curso en modo por lotes<small>Muestra quién ya pasó la tarjeta y quién falta.</small></span></label>
+      <label class="switch"><input type="checkbox" data-cfg="canjes"><span>Catálogo de canjes<small>Canjes con precio fijo, definidos en catalogo.json.</small></span></label>
+    </div>
+
+    <h2>Apariencia de las tarjetas</h2>
+    <div class="panel">
+      <label class="campo">Color de cada tarjeta
+        <select data-cfg="reglaColor">
+          <option value="curso">Según el curso</option>
+          <option value="estudiante">Lo elige cada estudiante</option>
+          <option value="unico">El mismo para todas</option>
+        </select>
+      </label>
+      <p class="nota" id="notaColor"></p>
+      <div id="campoColorUnico"><div class="paleta" id="paletaUnico" style="margin-top:10px"></div></div>
+      <label class="switch"><input type="checkbox" data-cfg="emojis"><span>Permitir un emoji en la tarjeta<small>Cada estudiante lo elige desde su ficha, en tu teléfono.</small></span></label>
+    </div>
+
+    <h2>Periodo</h2>
+    <div class="panel">
+      <p style="margin:0">Periodo actual: <b id="periodoActual" class="num"></b></p>
+      <label class="campo" style="margin-top:12px">Al cerrar el periodo, los saldos
+        <select data-cfg="reglaCierre">
+          <option value="conservar">Se conservan completos</option>
+          <option value="reiniciar">Vuelven a 0</option>
+          <option value="porcentaje">Conservan un porcentaje</option>
+        </select>
+      </label>
+      <label class="campo" id="campoPorc">Porcentaje que se conserva<input type="number" min="0" max="100" inputmode="numeric" data-cfg="porcentaje"></label>
+      <button class="sec" id="cerrarPeriodo"></button>
+      <p class="nota">Cada tarjeta se ajusta sola la próxima vez que se acerque. Si varios docentes comparten tarjetas, usen la misma regla.</p>
+    </div>
+
+    <h2>Tus datos</h2>
+    <div class="panel">
+      <label class="campo">Tu nombre<input data-cfg="docente" maxlength="40"></label>
+      <label class="campo">Tu número de docente (1 a 255)<input type="number" min="1" max="255" inputmode="numeric" data-cfg="codigoDocente"></label>
+      <p class="nota">Identifica tus movimientos dentro de las tarjetas. Debe coincidir con tu número en la lista de docentes de catalogo.json.</p>
+      <label class="campo">Mis cursos, separados por coma<textarea id="cfgCursos" placeholder="Ej. 9A, 9B, 10A"></textarea></label>
+      <p class="nota">Aparecen como lista al registrar estudiantes y en la app de Asistencia.</p>
+    </div>
+
+    <h2>Otras apps del sistema</h2>
+    <div class="panel">
+      <a class="sec" href="../asistencia/" style="margin-top:0">Asistencia</a>
+      <a class="sec" href="../informes/">Informes</a>
+      <a class="sec" href="../mis-puntos/">Mis Puntos (vista del estudiante)</a>
+      <p class="nota">Comparten los estudiantes, la clave y estos ajustes en este mismo teléfono. Abre cada una e instálala desde su propia página para tener íconos separados.</p>
+    </div>
+
+    <h2>Respaldo</h2>
+    <div class="panel">
+      <button class="grande" id="compartir" style="margin-top:0">Compartir respaldo</button>
+      <button class="sec" id="expSaldos">Descargar saldos (CSV)</button>
+      <button class="sec" id="expMovs">Descargar movimientos (CSV)</button>
+      <label class="sec archivo">Importar CSV de saldos o movimientos<input type="file" id="impCSV" accept=".csv,text/csv"></label>
+      <label class="switch"><input type="checkbox" data-cfg="recordatorio"><span>Recordarme respaldar cada semana</span></label>
+      <p class="nota" id="statsDatos"></p>
+    </div>
+
+    <h2>Catálogo</h2>
+    <div class="panel">
+      <p class="nota" id="catInfo" style="margin-top:0"></p>
+      <button class="sec" id="recargarCat">Volver a cargar catalogo.json</button>
+    </div>
+  </section>
+</main>
+
+<div id="armado" class="armado" hidden>
+  <div class="pulso"><svg viewBox="0 0 24 24"><path d="M6 8.5c2 2 2 5 0 7"/><path d="M10 6c3.4 3.4 3.4 8.6 0 12"/><path d="M14 3.5c4.8 4.8 4.8 12.2 0 17"/></svg></div>
+  <div class="txt"><b id="armTitulo"></b><small id="armSub"></small></div>
+  <button id="armFaltan" hidden>Faltan</button>
+  <button id="armCancel">Terminar</button>
+</div>
+
+<nav class="tabbar"><div>
+  <button data-ir="mover" class="act"><svg viewBox="10 0 24 24"><path d="M14 8h17l-4-4M30 16H13l4 4"/></svg>Transferir</button>
+  <button data-ir="consultar"><svg viewBox="10 0 24 24"><rect x="15" y="3" width="11" height="18" rx="2"/><path d="M29.5 9c1.5 2 1.5 4 0 6M32.5 6.5c3 3.3 3 7.7 0 11"/></svg>Consultar</button>
+  <button data-ir="estudiantes"><svg viewBox="10 0 24 24"><circle cx="18" cy="8" r="3.5"/><path d="M11 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/><circle cx="28" cy="9" r="3"/><path d="M27 13.6c3.5 0 6 2.2 6 5.9"/></svg>Estudiantes</button>
+  <button data-ir="ajustes"><svg viewBox="10 0 24 24"><circle cx="22" cy="12" r="3"/><path d="M22 3v2.5M22 18.5V21M13 12h2.5M28.5 12H31M15.6 5.6l1.8 1.8M26.6 16.6l1.8 1.8M15.6 18.4l1.8-1.8M26.6 7.4l1.8-1.8"/></svg>Ajustes</button>
+</div></nav>
+
+<div id="hoja" class="hoja" hidden>
+  <div class="hoja-fondo" id="hojaFondo"></div>
+  <div class="hoja-panel" id="hojaCont" role="dialog" aria-modal="true"></div>
+</div>
+<datalist id="dlCursos"></datalist>
+<div id="cubierta" class="cubierta" hidden role="alert"><div class="cub-panel"><div class="cub-anillo"></div><b id="cubTitulo"></b><small id="cubSub"></small></div></div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script src="../qrcode.js"></script>
+<script>
+'use strict';
+/* =========================================================
+   Utilidades
+   ========================================================= */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Number(n || 0).toLocaleString('es-CO');
+const cuando = iso => { try { return new Date(iso).toLocaleString('es-CO', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}); } catch (e) { return iso; } };
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+const iniciales = n => (n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+const vibrar = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+const clon = o => JSON.parse(JSON.stringify(o));
+const te = new TextEncoder(), td = new TextDecoder();
+const b64e = u => btoa(String.fromCharCode(...u)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+const iguales = (a, b) => !!a && !!b && a.length === b.length && Array.from(a).every((x, i) => x === b[i]);
+const esCobro = tipo => tipo === 'cobrar' || tipo === 'canje';
+
+// Fechas en la tarjeta: días contados desde el 1 de enero de 2024 (2 bytes)
+const EPOCH = Date.UTC(2024, 0, 1);
+const hoyDia = () => { const d = new Date(); return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - EPOCH) / 864e5); };
+const fechaDia = n => new Date(EPOCH + n * 864e5).toLocaleDateString('es-CO', { timeZone: 'UTC', day: 'numeric', month: 'short' });
+const isoDia = n => new Date(EPOCH + n * 864e5).toISOString().slice(0, 10);
+
+/* =========================================================
+   Configuración, catálogo y registro local
+   ========================================================= */
+const KEY = 'bancoPuntos.v2', KEY_CAT = 'bancoPuntos.catalogo';
+const CFG_BASE = {
+  docente: '', codigoDocente: 1,
+  pinDocente: null, pinAlAbrir: false, pinCadaMov: false, pinEstudiantes: false,
+  tope: 0, confirmarDesde: 100, deshacer: true, verificar: false, listaCurso: false, canjes: false,
+  recordatorio: true, ultimoRespaldo: 0,
+  periodo: 1, reglaCierre: 'conservar', porcentaje: 50,
+  reglaColor: 'curso', colorUnico: 1, emojis: true, usarInstitucional: true, misCursos: []
+};
+const CAT_BASE = {
+  version: 0,
+  motivos: [
+    { codigo: 'AC', nombre: 'Ayuda en clase', tipo: 'dar' }, { codigo: 'TA', nombre: 'Tarea', tipo: 'dar' },
+    { codigo: 'TE', nombre: 'Trabajo extra', tipo: 'dar' }, { codigo: 'PA', nombre: 'Participación', tipo: 'dar' },
+    { codigo: 'AS', nombre: 'Asistencia', tipo: 'dar' }, { codigo: 'AI', nombre: 'Actividad institucional', tipo: 'dar' },
+    { codigo: 'EV', nombre: 'Mejora de evaluación', tipo: 'cobrar' }, { codigo: 'OT', nombre: 'Otro', tipo: 'ambos' }
+  ],
+  canjes: [], docentes: []
+};
+function validarCat(c) {
+  const cod = x => /^[A-Z0-9]{2}$/.test(x.codigo || '');
+  return !!c && Array.isArray(c.motivos) && c.motivos.length > 0 && c.motivos.every(m => cod(m) && m.nombre)
+    && (!c.canjes || (Array.isArray(c.canjes) && c.canjes.every(x => cod(x) && x.nombre && x.precio > 0)));
+}
+let cat = (() => { try { const c = JSON.parse(localStorage.getItem(KEY_CAT)); if (validarCat(c)) return c; } catch (e) {} return CAT_BASE; })();
+async function actualizarCatalogo(avisar) {
+  try {
+    const r = await fetch('../catalogo.json', { cache: 'no-cache' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (!validarCat(j)) throw new Error('formato');
+    cat = j; localStorage.setItem(KEY_CAT, JSON.stringify(j)); pintarMover(); pintarAjustes();
+    if (avisar) toast('Catálogo actualizado.');
+  } catch (e) { if (avisar) toast('No se pudo cargar catalogo.json. Se sigue usando la última copia.'); }
+}
+const motivosPara = tipo => cat.motivos.filter(m => !m.tipo || m.tipo === 'ambos' || m.tipo === tipo);
+const canjes = () => cat.canjes || [];
+const SIS = { apertura: 'Registro de tarjeta', restauracion: 'Saldo restaurado', cierre: 'Cierre de periodo', traslado: 'Cambio de tarjeta' };
+function nombreMotivo(tipo, codigo) {
+  if (SIS[tipo]) return SIS[tipo];
+  const base = canjes().find(x => x.codigo === codigo)?.nombre || cat.motivos.find(m => m.codigo === codigo)?.nombre || codigo;
+  return tipo === 'deshacer' ? 'Se deshizo: ' + base : tipo === 'canje' ? 'Canje: ' + base : base;
+}
+const nombreDocente = n => (cat.docentes || []).find(d => d.codigo === n)?.nombre || (n ? 'Docente ' + n : '');
+// Cuenta 0 = institucional; cualquier otro número = la cuenta de ese docente.
+const nombreCuenta = c => c === 0 ? (cat.nombreInstitucional || 'Institucional') : (c === cfg.codigoDocente && cfg.docente && !(cat.docentes || []).some(d => d.codigo === c) ? cfg.docente : nombreDocente(c));
+function cuentaCanje(c) {
+  if ((c.cuenta || 'docente') === 'institucional') return cfg.usarInstitucional ? 0 : null;
+  if (c.docente && c.docente !== cfg.codigoDocente) return null;
+  return cfg.codigoDocente;
+}
+const canjesMios = () => canjes().filter(c => cuentaCanje(c) !== null);
+
+const db = cargar(), cfg = db.cfg;
+// Si otra app (Asistencia) cambia los datos en este mismo navegador, se recargan aquí.
+window.addEventListener('storage', e => {
+  if (e.key !== KEY || !e.newValue) return;
+  try { const n = JSON.parse(e.newValue); db.students = n.students; db.movs = n.movs || []; db.clave = n.clave; Object.assign(cfg, n.cfg || {}); } catch (_) { return; }
+  pintarEstudiantes(); pintarRecientes(); pintarMover();
+});
+Object.values(db.students).forEach(s => { if (s.t && !Array.isArray(s.t.cuentas)) { s.t.cuentas = s.t.saldo > 0 ? [{ c: 0, s: s.t.saldo }] : []; (s.t.movs || []).forEach(m => { if (m.cuenta === undefined) m.cuenta = 0; }); } });
+function cargar() {
+  try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.students) { d.movs = d.movs || []; d.cfg = Object.assign({}, CFG_BASE, d.cfg || {}); return d; } } catch (e) {}
+  return { students: {}, movs: [], clave: '', cfg: Object.assign({}, CFG_BASE) };
+}
+function guardar() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast('No se pudo guardar en el teléfono. Comparte un respaldo ahora.'); } }
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+const activos = () => Object.values(db.students).filter(s => s.estado !== 'bloqueada');
+
+const st = { tipo: 'dar', canje: '', fijado: null, cuenta: 'mia', armado: null, verificando: null, lote: new Set(), ultimo: { uid: '', t: 0 }, recientes: [],
+  autoCierre: 0, modal: '', bloqueado: false, desbloqueadoHasta: 0, deshacible: null, intentos: {}, ocultoDesde: 0 };
+
+/* =========================================================
+   Apariencia: colores y emojis. Las dos listas solo se amplían al final;
+   nunca se reordenan, porque la tarjeta guarda la posición.
+   ========================================================= */
+const PALETA = [null,
+  { n: 'Amarillo', bg: '#ffc93c', ink: '#14213d' }, { n: 'Naranja', bg: '#ff8c42', ink: '#2a1300' },
+  { n: 'Coral', bg: '#ff6b6b', ink: '#2a0808' }, { n: 'Rosa', bg: '#f78fb3', ink: '#2b0a17' },
+  { n: 'Lavanda', bg: '#b197fc', ink: '#160b3a' }, { n: 'Azul', bg: '#4dabf7', ink: '#08223a' },
+  { n: 'Turquesa', bg: '#3bc9db', ink: '#062a30' }, { n: 'Verde', bg: '#69db7c', ink: '#0b2e13' },
+  { n: 'Lima', bg: '#c0eb75', ink: '#1f2a05' }, { n: 'Marino', bg: '#14213d', ink: '#ffc93c' },
+  { n: 'Grafito', bg: '#343a40', ink: '#f8f9fa' }, { n: 'Vino', bg: '#862e5c', ink: '#fff0f6' }
+];
+const EMOJIS = ['', '⭐', '🚀', '⚽', '🏀', '🎸', '🎨', '📚', '🔬', '🧪', '💡', '🎮', '🎧', '🌱', '🌻', '🌙', '☀️', '🔥', '⚡', '🌈',
+  '🐱', '🐶', '🦊', '🐼', '🦁', '🐸', '🐢', '🦋', '🐬', '🦉', '🐉', '🍀', '🎯', '🏆', '🧩', '🎲', '🛹', '🚲', '📷', '🌎'];
+function colorCurso(curso) {
+  const c = (curso || '').toUpperCase().replace(/\s+/g, ''); if (!c) return 1;
+  let h = 0; for (const ch of c) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  return 1 + (h % (PALETA.length - 1));
+}
+const temaDe = t => PALETA[(t.color > 0 && t.color < PALETA.length) ? t.color : colorCurso(t.curso)];
+const emojiDe = t => EMOJIS[t.emoji] || '';
+const estilo = t => { const p = temaDe(t); return `--tc-bg:${p.bg};--tc-ink:${p.ink}`; };
+function normalizarTema(t) {
+  if (cfg.reglaColor === 'curso') t.color = 0;
+  else if (cfg.reglaColor === 'unico') t.color = cfg.colorUnico || 1;
+  if (!cfg.emojis) t.emoji = 0;
+}
+
+/* =========================================================
+   Formato de la tarjeta (versión 4)
+   0 versión | 1-2 nº de movimiento | 3-5 ganado | 6-8 gastado | 9-10 día de registro
+   11 periodo | 12-15 huella del PIN | 16 color | 17 emoji | 18 nº cuentas | 19 nº movimientos
+   luego 4 bytes por cuenta (máx. 8): docente(1, 0 = institucional) saldo(3)
+   luego 8 bytes por movimiento (máx. 5): día(2) tipo(1: bit 7 = negativo, bit 6 = cuenta institucional)
+     código(2) puntos(2) docente que lo hizo(1)
+   luego nombre (1 + hasta 24 bytes) y curso (1 + hasta 8 bytes). Al final, 12 bytes de firma.
+   Las versiones 2 y 3 (un solo saldo) se leen pasando ese saldo a la cuenta institucional.
+   ========================================================= */
+const TIPOS = ['dar', 'cobrar', 'apertura', 'restauracion', 'deshacer', 'canje', 'cierre', 'traslado'];
+const MAX_MOVS = 5, MAX_CUENTAS = 8;
+function recorte(s, max) { s = (s || '').trim(); let b = te.encode(s); while (b.length > max) { s = [...s].slice(0, -1).join(''); b = te.encode(s); } return b; }
+const set24 = (v, o, n) => { n = Math.max(0, Math.min(16777215, Math.round(n || 0))); v.setUint8(o, n >> 16); v.setUint16(o + 1, n & 0xffff); };
+const get24 = (v, o) => (v.getUint8(o) << 16) | v.getUint16(o + 1);
+const recalcular = t => { t.cuentas = t.cuentas || []; t.saldo = t.cuentas.reduce((a, x) => a + x.s, 0); return t; };
+const saldoCuenta = (t, c) => ((t.cuentas || []).find(x => x.c === c) || { s: 0 }).s;
+function cuentaDe(t, c) {
+  let x = t.cuentas.find(y => y.c === c);
+  if (!x) {
+    const vacias = t.cuentas.filter(y => y.s === 0 && y.c !== 0);
+    if (t.cuentas.length - vacias.length >= MAX_CUENTAS) throw new Error('La tarjeta ya tiene 8 cuentas con saldo. Una de ellas debe quedar en cero antes de abrir otra.');
+    x = { c, s: 0 }; t.cuentas.push(x); t.cuentas.sort((a, b) => a.c - b.c);
+  }
+  return x;
+}
+
+function codificar(t) {
+  const nom = recorte(t.nombre, 24), cur = recorte(t.curso, 8), movs = t.movs.slice(-MAX_MOVS);
+  const cts = (t.cuentas || []).filter(x => x.s > 0).slice(0, MAX_CUENTAS);
+  const b = new Uint8Array(20 + cts.length * 4 + movs.length * 8 + 2 + nom.length + cur.length), v = new DataView(b.buffer);
+  b[0] = 4; v.setUint16(1, t.contador & 0xffff); set24(v, 3, t.ganado); set24(v, 6, t.gastado);
+  v.setUint16(9, Math.max(0, t.registro)); b[11] = Math.min(255, t.periodo || 1);
+  if (t.pin) b.set(t.pin, 12);
+  b[16] = t.color || 0; b[17] = t.emoji || 0; b[18] = cts.length; b[19] = movs.length;
+  let o = 20;
+  for (const x of cts) { b[o] = x.c; set24(v, o + 1, x.s); o += 4; }
+  for (const m of movs) {
+    const cod = ((m.codigo || '--') + '--').slice(0, 2);
+    v.setUint16(o, Math.max(0, m.dia));
+    b[o + 2] = Math.max(0, TIPOS.indexOf(m.tipo)) | (m.puntos < 0 ? 0x80 : 0) | (m.cuenta === 0 ? 0x40 : 0);
+    b[o + 3] = cod.charCodeAt(0); b[o + 4] = cod.charCodeAt(1);
+    v.setUint16(o + 5, Math.min(65535, Math.abs(m.puntos))); b[o + 7] = m.docente || 0; o += 8;
+  }
+  b[o++] = nom.length; b.set(nom, o); o += nom.length; b[o++] = cur.length; b.set(cur, o);
+  return b;
+}
+function decodificar(b) {
+  try {
+    const ver = b[0];
+    if (b.length < 22 || ![2, 3, 4].includes(ver)) return null;
+    const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
+    let t, o, n;
+    if (ver === 4) {
+      t = { contador: v.getUint16(1), ganado: get24(v, 3), gastado: get24(v, 6), registro: v.getUint16(9), periodo: b[11], pin: null, color: b[16], emoji: b[17], cuentas: [], movs: [] };
+      const pin = Array.from(b.slice(12, 16)); if (pin.some(x => x)) t.pin = pin;
+      const nc = b[18]; n = b[19]; if (nc > MAX_CUENTAS || n > MAX_MOVS) return null;
+      o = 20;
+      for (let i = 0; i < nc; i++) { t.cuentas.push({ c: b[o], s: get24(v, o + 1) }); o += 4; }
+    } else {
+      const saldo = get24(v, 1);
+      t = { contador: v.getUint16(4), ganado: get24(v, 6), gastado: get24(v, 9), registro: v.getUint16(12), periodo: b[14], pin: null, color: 0, emoji: 0, cuentas: saldo > 0 ? [{ c: 0, s: saldo }] : [], movs: [] };
+      const pin = Array.from(b.slice(15, 19)); if (pin.some(x => x)) t.pin = pin;
+      n = b[19]; if (n > MAX_MOVS) return null;
+      o = 20; if (ver === 3) { t.color = b[20]; t.emoji = b[21]; o = 22; }
+    }
+    for (let i = 0; i < n; i++) {
+      const tb = b[o + 2], doc = b[o + 7], puntos = (tb & 0x80 ? -1 : 1) * v.getUint16(o + 5);
+      const inst = ver < 4 || (tb & 0x40);
+      t.movs.push({ dia: v.getUint16(o), tipo: TIPOS[tb & 0x3f] || 'dar', puntos, codigo: String.fromCharCode(b[o + 3], b[o + 4]), docente: doc, cuenta: inst ? 0 : doc });
+      o += 8;
+    }
+    const ln = b[o++]; t.nombre = td.decode(b.slice(o, o + ln)); o += ln;
+    const lc = b[o++]; t.curso = td.decode(b.slice(o, o + lc)); o += lc;
+    return o === b.length ? recalcular(t) : null;
+  } catch (e) { return null; }
+}
+const tNueva = (nombre, curso) => ({ saldo: 0, cuentas: [], contador: 0, ganado: 0, gastado: 0, registro: hoyDia(), periodo: cfg.periodo, pin: null, movs: [], nombre, curso, color: 0, emoji: 0 });
+
+function aplicarMov(t, tipo, puntos, codigo, cuenta = 0) {
+  if (puntos) { const x = cuentaDe(t, cuenta); x.s = Math.max(0, x.s + puntos); }
+  recalcular(t); t.contador++;
+  if (tipo === 'dar' || tipo === 'apertura') t.ganado += puntos;
+  else if (tipo === 'cobrar' || tipo === 'canje') t.gastado -= puntos;
+  else if (tipo === 'deshacer') { if (puntos < 0) t.ganado += puntos; else t.gastado -= puntos; }
+  t.ganado = Math.max(0, t.ganado); t.gastado = Math.max(0, t.gastado);
+  t.movs.push({ dia: hoyDia(), tipo, puntos, codigo: codigo || '--', docente: cfg.codigoDocente || 0, cuenta: puntos ? cuenta : 0 });
+  t.movs = t.movs.slice(-MAX_MOVS);
+}
+// El cierre de periodo se aplica a todas las cuentas por igual.
+function aplicarCierre(t) {
+  const f = x => cfg.reglaCierre === 'reiniciar' ? 0 : cfg.reglaCierre === 'porcentaje' ? Math.floor(x * Math.min(100, cfg.porcentaje) / 100) : x;
+  const antes = t.saldo;
+  t.cuentas.forEach(x => x.s = f(x.s)); t.cuentas = t.cuentas.filter(x => x.s > 0);
+  recalcular(t); t.periodo = cfg.periodo; t.contador++;
+  t.movs.push({ dia: hoyDia(), tipo: 'cierre', puntos: t.saldo - antes, codigo: '--', docente: cfg.codigoDocente || 0, cuenta: 0 });
+  t.movs = t.movs.slice(-MAX_MOVS);
+  return t.saldo - antes;
+}
+function movLocal(uid, t, tipo, puntos, codigo, obs, cuenta = 0) {
+  return { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), fecha: new Date().toISOString(), uid, nombre: t.nombre, curso: t.curso,
+    tipo, puntos, codigo: codigo || '--', motivo: nombreMotivo(tipo, codigo), observacion: obs || '', cuenta, cuenta_nombre: nombreCuenta(cuenta), saldo_cuenta: saldoCuenta(t, cuenta),
+    saldo: t.saldo, contador: t.contador, docente: cfg.docente || nombreDocente(cfg.codigoDocente), periodo: t.periodo };
+}
+
+/* =========================================================
+   Firmas
+   ========================================================= */
+let llave = { clave: null, key: null };
+async function hmac(bytes) {
+  if (llave.clave !== db.clave) llave = { clave: db.clave, key: await crypto.subtle.importKey('raw', te.encode(db.clave), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']) };
+  return new Uint8Array(await crypto.subtle.sign('HMAC', llave.key, bytes));
+}
+async function firmaTarjeta(uid, payload) { const u = te.encode(uid), m = new Uint8Array(u.length + payload.length); m.set(u); m.set(payload, u.length); return (await hmac(m)).slice(0, 12); }
+async function pinHash(uid, pin) { return Array.from((await hmac(te.encode('PIN|' + uid + '|' + pin))).slice(0, 4)); }
+async function sha(s) { return b64e(new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(s)))); }
+
+/* =========================================================
+   Avisos, sonido y hoja inferior
+   ========================================================= */
+let toastT;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3400); }
+let actx;
+document.addEventListener('click', () => { try { actx = actx || new AudioContext(); } catch (e) {} }, { once: true });
+function sonar(tipo) {
+  try {
+    if (!actx) return; if (actx.state === 'suspended') actx.resume();
+    const notas = tipo === 'cobrar' ? [523, 392] : tipo === 'error' ? [220, 220] : [659, 988];
+    notas.forEach((f, i) => {
+      const t0 = actx.currentTime + i * .1, o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = f; g.gain.setValueAtTime(.0001, t0);
+      g.gain.exponentialRampToValueAtTime(.18, t0 + .012); g.gain.exponentialRampToValueAtTime(.0001, t0 + .13);
+      o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + .15);
+    });
+  } catch (e) {}
+}
+function abrirHoja(html, fija, completa) {
+  clearTimeout(st.autoCierre);
+  const h = $('#hoja'); $('#hojaCont').innerHTML = html; $('#hojaCont').scrollTop = 0;
+  h.dataset.fija = fija ? '1' : ''; h.classList.toggle('completa', !!completa); h.hidden = false;
+  requestAnimationFrame(() => requestAnimationFrame(() => h.classList.add('abierta')));
+  return $('#hojaCont');
+}
+function cerrarHoja() {
+  const h = $('#hoja'); h.classList.remove('abierta');
+  setTimeout(() => { if (!h.classList.contains('abierta')) h.hidden = true; }, 260);
+}
+$('#hojaFondo').onclick = () => { if (!$('#hoja').dataset.fija) cerrarHoja(); };
+$('#hojaCont').addEventListener('click', e => { if (e.target.closest('[data-x]')) cerrarHoja(); });
+const hojaError = (titulo, texto) => abrirHoja(`<div class="aviso bad"><b>${esc(titulo)}</b><p>${esc(texto)}</p></div><button class="sec" data-x>Cerrar</button>`);
+
+/* =========================================================
+   Teclado de PIN
+   ========================================================= */
+function pedirPIN({ titulo, texto = '', largo = 0, min = 4, max = 6, fija = false }) {
+  return new Promise(res => {
+    let v = ''; st.modal = 'pin';
+    const c = abrirHoja(`<div class="pin"><b class="pin-t">${esc(titulo)}</b>${texto ? `<p class="nota">${esc(texto)}</p>` : ''}
+      <div class="pin-d" data-d></div>
+      <div class="teclado">${[1,2,3,4,5,6,7,8,9].map(n => `<button data-k="${n}">${n}</button>`).join('')}
+      <button data-k="b" aria-label="Borrar">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">Listo</button></div>
+      ${fija ? '' : '<button class="sec" data-k="cancel">Cancelar</button>'}</div>`, true, fija);
+    const pintar = () => { const n = largo || Math.max(min, v.length); c.querySelector('[data-d]').innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i < v.length ? 'on' : ''}"></i>`).join(''); };
+    const fin = r => { st.modal = ''; cerrarHoja(); res(r); };
+    pintar();
+    c.querySelector('.pin').onclick = e => {
+      const k = e.target.closest('[data-k]')?.dataset.k; if (!k) return;
+      if (k === 'cancel') return fin(null);
+      if (k === 'b') v = v.slice(0, -1);
+      else if (k === 'ok') { if (v.length >= (largo || min)) return fin(v); toast(largo ? `El PIN tiene ${largo} dígitos.` : `El PIN tiene de ${min} a ${max} dígitos.`); }
+      else if (v.length < (largo || max)) { v += k; vibrar(8); if (largo && v.length === largo) { pintar(); return setTimeout(() => fin(v), 150); } }
+      pintar();
+    };
+  });
+}
+async function pinDocenteCorrecto(pin) { return !!pin && cfg.pinDocente && (await sha(cfg.pinDocente.salt + '|' + pin)) === cfg.pinDocente.hash; }
+async function verificarPinDocente(texto) {
+  if (!cfg.pinDocente) return true;
+  const pin = await pedirPIN({ titulo: 'PIN del docente', texto, min: 4, max: 6 });
+  if (pin === null) return false;
+  if (await pinDocenteCorrecto(pin)) { st.desbloqueadoHasta = Date.now() + 5 * 60e3; return true; }
+  sonar('error'); toast('PIN del docente incorrecto.'); return false;
+}
+const autorizar = () => (cfg.pinDocente && cfg.pinCadaMov) ? verificarPinDocente('Para autorizar este movimiento.') : Promise.resolve(true);
+async function bloquearApp() {
+  if (st.bloqueado || !cfg.pinDocente) return;
+  st.bloqueado = true; desarmar();
+  for (;;) {
+    const p = await pedirPIN({ titulo: 'Banco de Puntos', texto: 'Escribe el PIN del docente para continuar.', min: 4, max: 6, fija: true });
+    if (await pinDocenteCorrecto(p)) break;
+    sonar('error'); toast('PIN incorrecto.');
+  }
+  st.bloqueado = false; st.desbloqueadoHasta = Date.now() + 5 * 60e3;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) st.ocultoDesde = Date.now();
+  else if (cfg.pinDocente && cfg.pinAlAbrir && st.ocultoDesde && Date.now() - st.ocultoDesde > 120000) bloquearApp();
+});
+
+/* =========================================================
+   NFC
+   ========================================================= */
+const NFC = 'NDEFReader' in window;
+let lector = null, ocupado = false;
+function pintarLector() {
+  const p = $('#pillNFC');
+  p.className = 'pill ' + (!NFC ? 'no' : lector ? 'on' : 'off');
+  p.querySelector('b').textContent = !NFC ? 'Sin NFC' : lector ? 'Lector listo' : 'Activar lector';
+}
+async function activarLector() {
+  if (!NFC) { hojaSinNFC(); return false; }
+  if (lector) return true;
+  try {
+    const r = new NDEFReader();
+    r.addEventListener('reading', alLeer);
+    r.addEventListener('readingerror', () => { if (ocupado || st.modal) return; vibrar([60, 50, 60]); cubierta('No se alcanzó a leer', 'Acerca la tarjeta otra vez y déjala quieta hasta la vibración larga.', 'aviso-lectura', 2600); });
+    await r.scan();
+    lector = r; pintarLector(); return true;
+  } catch (e) {
+    pintarLector();
+    toast(e.name === 'NotAllowedError' ? 'Permiso de NFC denegado. Actívalo en los ajustes del sitio en Chrome.'
+      : e.name === 'NotReadableError' ? 'Enciende el NFC del teléfono e inténtalo de nuevo.' : 'No se pudo iniciar el lector: ' + e.message);
+    return false;
+  }
+}
+$('#pillNFC').onclick = () => activarLector();
+function hojaSinNFC() {
+  abrirHoja(`<div class="aviso warn"><b>Este navegador no puede leer tarjetas</b>
+    <p>La lectura y escritura NFC funciona en <b>Chrome para Android</b>. En computador o iPhone puedes ver estudiantes y manejar respaldos, pero no dar ni cobrar.</p></div>
+    <button class="sec" data-x>Entendido</button>`);
+}
+
+function leerTag(e) {
+  const uid = (e.serialNumber || '').toUpperCase();
+  let p = null;
+  try {
+    for (const r of e.message.records) {
+      if (r.recordType !== 'url' && r.recordType !== 'absolute-url') continue;
+      const m = td.decode(r.data).match(/#d=([A-Za-z0-9_-]+)/); if (!m) continue;
+      const all = b64d(m[1]);
+      if (all.length < 34) { p = { t: null }; continue; }
+      const payload = all.slice(0, -12);
+      p = { payload, sig: all.slice(-12), t: decodificar(payload) };
+    }
+  } catch (_) { p = p || { t: null }; }
+  return { uid, p };
+}
+async function evaluar(uid, p) {
+  const s = db.students[uid] || null;
+  if (s && s.estado === 'bloqueada') return { uid, estado: 'bloqueada', s };
+  if (!p) return { uid, estado: s ? 'vacia' : 'nueva', s };
+  if (!p.t) return { uid, estado: 'alterada', s, t: null };
+  const valida = iguales(await firmaTarjeta(uid, p.payload), p.sig);
+  if (!valida) return { uid, estado: 'alterada', s, t: p.t };
+  if (s && p.t.contador < s.t.contador) return { uid, estado: 'antigua', s, t: p.t };
+  return { uid, estado: 'ok', s, t: p.t };
+}
+
+// Pone al día el registro local con lo que trae la tarjeta y prepara el cierre de periodo si toca.
+// También detecta si la cuenta de este docente cambió sin un movimiento hecho desde este teléfono.
+function prepararT(ev) {
+  let sync = '', alerta = null, s = db.students[ev.uid];
+  const yo = cfg.codigoDocente;
+  if (!s) { s = db.students[ev.uid] = { uid: ev.uid, t: clon(ev.t), estado: 'activa', anteriores: [] }; sync = 'nuevo'; }
+  else if (ev.t.contador > s.t.contador || (ev.t.contador === s.t.contador && ev.t.saldo !== s.t.saldo)) {
+    if (ev.t.contador > s.t.contador) {
+      const a = saldoCuenta(s.t, yo), b = saldoCuenta(ev.t, yo);
+      if (a !== b && !ev.t.movs.some(m => m.tipo === 'cierre')) alerta = { antes: a, despues: b };
+    }
+    const n = s.t.nombre, c = s.t.curso, igual = ev.t.contador === s.t.contador;
+    s.t = clon(ev.t); if (igual) { s.t.nombre = n; s.t.curso = c; } sync = 'actualizado';
+  }
+  guardar();
+  const t = clon(ev.t), movs = [];
+  if (s.t.contador === t.contador) { t.nombre = s.t.nombre; t.curso = s.t.curso; }
+  if (t.periodo > cfg.periodo) { cfg.periodo = t.periodo; guardar(); toast(`Periodo actualizado a ${t.periodo} según la tarjeta.`); }
+  else if (t.periodo < cfg.periodo) { const d = aplicarCierre(t); movs.push(movLocal(ev.uid, t, 'cierre', d, '--', '', 0)); }
+  return { t, movs, sync, alerta };
+}
+const avisoAlerta = al => al ? `<div class="aviso warn"><b>Tu cuenta cambió fuera de este teléfono</b><p>Pasó de ${fmt(al.antes)} a ${fmt(al.despues)} puntos sin un movimiento hecho aquí. Si no fue desde otro teléfono tuyo, revísalo con los demás docentes.</p></div>` : '';
+
+let cubiertaT;
+function cubierta(titulo, sub, clase, ms) {
+  clearTimeout(cubiertaT);
+  const c = $('#cubierta'); c.className = 'cubierta ' + (clase || ''); $('#cubTitulo').textContent = titulo; $('#cubSub').textContent = sub; c.hidden = false;
+  if (ms) cubiertaT = setTimeout(() => c.hidden = true, ms);
+}
+const quitarCubierta = () => { clearTimeout(cubiertaT); $('#cubierta').hidden = true; };
+
+async function escribirTarjeta(uid, t) {
+  normalizarTema(t);
+  const p = codificar(t), s = await firmaTarjeta(uid, p), all = new Uint8Array(p.length + 12);
+  all.set(p); all.set(s, p.length);
+  const u = new URL('../saldo.html', location.href); u.search = ''; u.hash = 'd=' + b64e(all);
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 5000);
+  cubierta('No retires la tarjeta', 'Guardando… espera la vibración larga.');
+  try { await lector.write({ records: [{ recordType: 'url', data: u.href }] }, { signal: ctrl.signal }); vibrar(350); }
+  catch (e) { throw new Error(e.name === 'AbortError' ? 'Se retiró la tarjeta antes de terminar. Acércala otra vez y déjala quieta.' : 'No se pudo escribir en la tarjeta (' + e.message + ').'); }
+  finally { clearTimeout(timer); quitarCubierta(); }
+}
+async function commit(uid, t, movs) {
+  await escribirTarjeta(uid, t);
+  const s = db.students[uid] || (db.students[uid] = { uid, estado: 'activa', anteriores: [] });
+  s.t = clon(t); s.actualizado = new Date().toISOString();
+  movs.forEach(m => db.movs.push(m)); guardar();
+}
+
+async function alLeer(e) {
+  if (st.bloqueado) return;
+  if (st.modal) { toast('Primero termina de escribir el PIN.'); return; }
+  if (ocupado) return;
+  const { uid, p } = leerTag(e);
+  if (!uid) { toast('Este teléfono no entregó el número de la tarjeta.'); return; }
+  if (uid === st.ultimo.uid && Date.now() - st.ultimo.t < 2500) return;
+  if (!db.clave) { pedirClave(); return; }
+  ocupado = true; vibrar(40);
+  try {
+    const ev = await evaluar(uid, p), a = st.armado; ev.p = p;
+    if (st.verificando && !a) { await verificarSegundo(ev); return; }
+    if (ev.estado === 'bloqueada') { hojaBloqueada(ev); return; }
+    if (a && a.soloUid && a.soloUid !== uid) { sonar('error'); toast('Esa no es la tarjeta de ' + (db.students[a.soloUid]?.t.nombre || 'ese estudiante') + '.'); return; }
+    switch (a?.modo) {
+      case 'registrar': await hacerRegistro(ev, a); break;
+      case 'reemplazo': await hacerReemplazo(ev, a); break;
+      case 'restaurar': await hacerRestaurar(ev); break;
+      case 'resetpin': await hacerResetPin(ev); break;
+      case 'deshacer': await hacerDeshacer(ev, a); break;
+      case 'personalizar': await hacerPersonalizar(ev, a); break;
+      case 'mover': await hacerMovimiento(ev, a); break;
+      default: await mostrarConsulta(ev);
+    }
+  } catch (err) {
+    sonar('error'); vibrar([80, 60, 80]);
+    abrirHoja(`<div class="aviso bad"><b>No se completó</b><p>${esc(err.message)}</p></div><p class="nota">No se cambió nada en el registro. Si hay un movimiento preparado, sigue activo.</p><button class="sec" data-x>Cerrar</button>`);
+  } finally { st.ultimo = { uid, t: Date.now() }; ocupado = false; }
+}
+
+/* =========================================================
+   Operaciones con la tarjeta
+   ========================================================= */
+async function hacerMovimiento(ev, a) {
+  if (ev.estado !== 'ok') { await mostrarConsulta(ev); return; }
+  if (a.continuo && st.lote.has(ev.uid)) { sonar('error'); toast((db.students[ev.uid]?.t.nombre || 'Esta tarjeta') + ' ya recibió este movimiento.'); return; }
+  const { t, movs, alerta } = prepararT(ev);
+  if (alerta) toast('Atención: tu cuenta en esta tarjeta cambió fuera de este teléfono.');
+  let pinNuevo = false;
+  if (esCobro(a.tipo) && cfg.pinEstudiantes) {
+    const bl = st.intentos[ev.uid];
+    if (bl && bl.hasta > Date.now()) { desarmar(); return hojaError('Cobros bloqueados por unos minutos', `Hubo 3 intentos con PIN incorrecto. Espera ${Math.ceil((bl.hasta - Date.now()) / 60000)} minutos o quita el PIN desde la ficha del estudiante.`); }
+    const h = await pinHash(ev.uid, a.pin || '');
+    if (!t.pin) { t.pin = h; pinNuevo = true; }
+    else if (!iguales(t.pin, h)) {
+      const r = st.intentos[ev.uid] || { n: 0, hasta: 0 }; r.n++;
+      if (r.n >= 3) { r.hasta = Date.now() + 5 * 60e3; r.n = 0; }
+      st.intentos[ev.uid] = r; desarmar(); sonar('error'); vibrar([80, 60, 80]);
+      return hojaError('PIN incorrecto', r.hasta > Date.now() ? 'Tercer intento fallido: los cobros a esta tarjeta quedan bloqueados 5 minutos.' : `Intento ${r.n} de 3. Prepara el cobro otra vez.`);
+    }
+    delete st.intentos[ev.uid];
+  }
+  if (a.cuenta !== 0 && a.cuenta !== cfg.codigoDocente) { desarmar(); return hojaError('Cuenta no permitida', 'Solo puedes mover tu propia cuenta o la institucional.'); }
+  const antes = saldoCuenta(t, a.cuenta), delta = a.tipo === 'dar' ? a.puntos : -a.puntos;
+  if (antes + delta < 0) {
+    sonar('error'); vibrar([80, 60, 80]); if (!a.continuo) desarmar();
+    return hojaError('Saldo insuficiente', `En la cuenta ${nombreCuenta(a.cuenta)}, ${t.nombre} tiene ${fmt(antes)} puntos y se necesitan ${fmt(a.puntos)}. Total en la tarjeta: ${fmt(t.saldo)}.`);
+  }
+  aplicarMov(t, a.tipo, delta, a.codigo, a.cuenta);
+  movs.push(movLocal(ev.uid, t, a.tipo, delta, a.codigo, a.obs, a.cuenta));
+  await commit(ev.uid, t, movs);
+  sonar(delta >= 0 ? 'dar' : 'cobrar');
+  st.deshacible = cfg.deshacer ? { uid: ev.uid, contador: t.contador, tipo: a.tipo, puntos: delta, codigo: a.codigo, cuenta: a.cuenta, hasta: Date.now() + 10 * 60e3 } : null;
+  if (st.fijado === ev.uid) { st.fijado = null; pintarMover(); }
+  if (a.continuo) { st.lote.add(ev.uid); pintarArmado(); }
+  else { desarmar(); if (cfg.verificar) { st.verificando = { uid: ev.uid, contador: t.contador, saldo: t.saldo, nombre: t.nombre }; pintarArmado(); } }
+  hojaResultado(t, antes, delta, a.tipo, a.codigo, a.obs, { rapido: a.continuo, pinNuevo, cuenta: a.cuenta });
+}
+
+async function hacerDeshacer(ev, a) {
+  if (ev.estado !== 'ok') { await mostrarConsulta(ev); return; }
+  const r = a.ref;
+  if (ev.t.contador !== r.contador) { desarmar(); return hojaError('No se puede deshacer', 'La tarjeta tuvo otro movimiento después de ese.'); }
+  const { t, movs } = prepararT(ev), antes = saldoCuenta(t, r.cuenta);
+  aplicarMov(t, 'deshacer', -r.puntos, r.codigo, r.cuenta);
+  movs.push(movLocal(ev.uid, t, 'deshacer', -r.puntos, r.codigo, '', r.cuenta));
+  await commit(ev.uid, t, movs);
+  st.deshacible = null; desarmar(); sonar('dar');
+  hojaResultado(t, antes, -r.puntos, 'deshacer', r.codigo, '', { cuenta: r.cuenta });
+}
+
+async function hacerRegistro(ev, a) {
+  const s = ev.s;
+  if (!a.soloUid && s && ev.estado === 'ok') { desarmar(); return hojaError('Esta tarjeta ya está registrada', `Pertenece a ${s.t.nombre} y tiene ${fmt(s.t.saldo)} puntos.`); }
+  const t = tNueva(a.nombre, a.curso);
+  t.contador = Math.max(ev.t?.contador || 0, s?.t?.contador || 0);
+  if (a.pin) t.pin = await pinHash(ev.uid, a.pin);
+  aplicarMov(t, 'apertura', a.saldo, '--', cfg.codigoDocente);
+  await commit(ev.uid, t, [movLocal(ev.uid, t, 'apertura', a.saldo, '--', '', a.saldo ? cfg.codigoDocente : 0)]);
+  sonar('dar'); desarmar();
+  abrirHoja(`<div class="resultado"><div class="quien">Tarjeta registrada</div></div>${tarjetaHTML(t, '<span class="badge">Lista</span>')}<button class="grande" data-x>Listo</button>`);
+}
+
+async function hacerReemplazo(ev, a) {
+  const viejo = db.students[a.deUid];
+  if (ev.uid === a.deUid) { toast('Esa es la tarjeta anterior. Acerca la tarjeta nueva.'); return; }
+  if (ev.s && ev.estado === 'ok') { toast(`Esa tarjeta ya es de ${ev.s.t.nombre}. Usa una sin registrar.`); return; }
+  const t = clon(viejo.t);
+  t.contador = Math.max(t.contador, ev.t?.contador || 0); t.pin = null;
+  aplicarMov(t, 'traslado', 0, '--');
+  await commit(ev.uid, t, [movLocal(ev.uid, t, 'traslado', 0, '--', 'Reemplaza la tarjeta ' + a.deUid)]);
+  const nuevo = db.students[ev.uid]; nuevo.estado = 'activa'; nuevo.anteriores = [a.deUid, ...(viejo.anteriores || [])];
+  viejo.estado = 'bloqueada'; viejo.nuevaUid = ev.uid; guardar();
+  sonar('dar'); desarmar();
+  abrirHoja(`<div class="resultado"><div class="quien">Tarjeta reemplazada</div></div>${tarjetaHTML(t, '<span class="badge">Nueva</span>')}
+    <p class="nota">La tarjeta anterior quedó bloqueada en este teléfono.${cfg.pinEstudiantes ? ' El estudiante creará un PIN nuevo en su próximo cobro.' : ''} Comparte un respaldo para que otros docentes también la bloqueen.</p><button class="grande" data-x>Listo</button>`);
+}
+
+async function hacerRestaurar(ev) {
+  const s = ev.s;
+  if (!s) { desarmar(); toast('Esa tarjeta no está en el registro de este teléfono.'); return; }
+  const t = clon(s.t);
+  t.contador = Math.max(t.contador, ev.t?.contador || 0);
+  aplicarMov(t, 'restauracion', 0, '--');
+  await commit(ev.uid, t, [movLocal(ev.uid, t, 'restauracion', 0, '--', '')]);
+  sonar('dar'); desarmar();
+  abrirHoja(`<div class="resultado"><div class="quien">Saldo restaurado</div></div>${tarjetaHTML(t, '<span class="badge">Verificada</span>')}<button class="grande" data-x>Listo</button>`);
+}
+
+async function hacerPersonalizar(ev, a) {
+  if (ev.estado !== 'ok') { await mostrarConsulta(ev); return; }
+  const { t, movs } = prepararT(ev);
+  t.color = a.color; t.emoji = a.emoji; t.contador++;
+  await commit(ev.uid, t, movs);
+  sonar('dar'); desarmar(); pintarEstudiantes();
+  abrirHoja(`<div class="resultado"><div class="quien">Tarjeta personalizada</div></div>${tarjetaHTML(t, '<span class="badge">Lista</span>')}<button class="grande" data-x>Listo</button>`);
+}
+
+async function hacerResetPin(ev) {
+  if (ev.estado !== 'ok') { await mostrarConsulta(ev); return; }
+  const { t, movs } = prepararT(ev);
+  t.pin = null; t.contador++;
+  await commit(ev.uid, t, movs);
+  delete st.intentos[ev.uid]; sonar('dar'); desarmar();
+  abrirHoja(`<div class="aviso"><b>PIN quitado</b><p>${esc(t.nombre)} creará uno nuevo en su próximo cobro.</p></div><button class="grande" data-x>Listo</button>`);
+}
+
+async function verificarSegundo(ev) {
+  const v = st.verificando;
+  if (ev.uid !== v.uid) { toast(`Primero confirma la tarjeta de ${v.nombre}.`); return; }
+  st.verificando = null; pintarArmado();
+  if (ev.estado === 'ok' && ev.t.contador === v.contador && ev.t.saldo === v.saldo) { sonar('dar'); vibrar(60); toast(`Tarjeta de ${v.nombre} confirmada.`); }
+  else { toast('La tarjeta no quedó bien escrita.'); await mostrarConsulta(ev); }
+}
+
+/* =========================================================
+   Pantallas
+   ========================================================= */
+function tarjetaHTML(t, badge) {
+  const e = emojiDe(t);
+  return `<div class="tarjeta" style="${estilo(t)}">${e ? `<div class="t-emoji" aria-hidden="true">${e}</div>` : ''}<div class="t-top"><span>Banco de Puntos</span>${badge || ''}</div>
+    <div class="t-saldo num">${fmt(t.saldo)}<small>pts</small></div>
+    <div class="t-nom">${esc(t.nombre)}</div><div class="t-cur">${esc(t.curso || '')}</div></div>`;
+}
+function cuentasHTML(t) {
+  const yo = cfg.codigoDocente, orden = x => x.c === 0 ? 0 : x.c === yo ? 1 : 2;
+  const cs = (t.cuentas || []).filter(x => x.s > 0);
+  if (!cs.some(x => x.c === yo)) cs.push({ c: yo, s: 0 });
+  return '<div class="cuentas">' + cs.sort((a, b) => orden(a) - orden(b) || a.c - b.c).map(x =>
+    `<div class="${x.c === yo ? 'mia' : ''}"><span>${esc(nombreCuenta(x.c))}${x.c === yo ? ' <small>tu cuenta</small>' : x.c === 0 ? ' <small>común</small>' : ''}</span><b class="num">${fmt(x.s)}</b></div>`).join('') + '</div>';
+}
+const cifrasHTML = t => `<div class="cifras"><div><b class="num pos">${fmt(t.ganado)}</b><small>ganados en total</small></div><div><b class="num neg">${fmt(t.gastado)}</b><small>gastados en total</small></div></div>`;
+const signo = p => `<span class="num ${p > 0 ? 'pos' : p < 0 ? 'neg' : 'cero'}">${p > 0 ? '+' : p < 0 ? '−' : ''}${fmt(Math.abs(p))}</span>`;
+function movsTarjetaHTML(t) {
+  if (!t.movs.length) return '<p class="vacio">La tarjeta no tiene movimientos.</p>';
+  return '<div class="movs">' + t.movs.slice().reverse().map(m => `<div class="mov"><span><b>${esc(nombreMotivo(m.tipo, m.codigo))}</b><small>${fechaDia(m.dia)}${m.docente ? ', ' + esc(nombreDocente(m.docente)) : ''}${m.puntos && m.cuenta === 0 && m.tipo !== 'cierre' ? ', cuenta ' + esc(nombreCuenta(0)) : ''}</small></span>${signo(m.puntos)}</div>`).join('') + '</div>';
+}
+function movsLocalesHTML(uids, lim) {
+  const m = db.movs.filter(x => uids.includes(x.uid)).slice(-lim).reverse();
+  if (!m.length) return '<p class="vacio">Sin movimientos en este teléfono.</p>';
+  return '<div class="movs">' + m.map(x => `<div class="mov"><span><b>${esc(x.motivo || nombreMotivo(x.tipo, x.codigo))}</b>${x.observacion ? `<i>${esc(x.observacion)}</i>` : ''}<small>${cuando(x.fecha)}${x.docente ? ', ' + esc(x.docente) : ''}${x.puntos && x.cuenta_nombre ? ', cuenta ' + esc(x.cuenta_nombre) : ''}</small></span>${signo(x.puntos)}</div>`).join('') + '</div>';
+}
+
+function hojaResultado(t, antes, delta, tipo, codigo, obs, { rapido, pinNuevo, cuenta = 0 }) {
+  const puedeDeshacer = cfg.deshacer && !rapido && tipo !== 'deshacer' && st.deshacible;
+  abrirHoja(`<div class="resultado">
+      <div class="delta num ${delta >= 0 ? 'pos' : 'neg'}">${delta >= 0 ? '+' : '−'}${fmt(Math.abs(delta))}</div>
+      <div class="quien">${esc(t.nombre)}</div>
+      <div class="cambio num">Cuenta ${esc(nombreCuenta(cuenta))}: ${fmt(antes)} → <b>${fmt(saldoCuenta(t, cuenta))}</b></div>
+      <p class="nota num" style="margin:4px 0 0">Total en la tarjeta: ${fmt(t.saldo)} puntos</p>
+      <p class="nota">${esc(nombreMotivo(tipo, codigo))}${obs ? '. ' + esc(obs) : ''}</p>
+      ${pinNuevo ? '<p class="nota"><b>Se guardó el PIN nuevo del estudiante.</b></p>' : ''}
+      ${st.verificando ? '<p class="nota"><b>Retira la tarjeta y acércala otra vez para confirmar.</b></p>' : ''}
+    </div>
+    <button class="grande" data-x>${rapido ? 'Siguiente tarjeta' : 'Listo'}</button>
+    ${puedeDeshacer ? '<button class="sec" data-r="deshacer">Deshacer</button>' : ''}`);
+  if (puedeDeshacer) $('#hojaCont [data-r=deshacer]').onclick = iniciarDeshacer;
+  if (rapido) st.autoCierre = setTimeout(cerrarHoja, 2200);
+}
+async function iniciarDeshacer() {
+  const d = st.deshacible;
+  if (!d || d.hasta < Date.now()) return toast('Ya pasó el tiempo para deshacer.');
+  if (!(await autorizar())) return;
+  st.verificando = null; cerrarHoja();
+  armar({ modo: 'deshacer', soloUid: d.uid, ref: d });
+}
+
+function formRegistroHTML() {
+  return `<label class="campo">Nombre del estudiante<input data-r="nombre" maxlength="40" autocomplete="off"></label>
+    <label class="campo">Curso<input data-r="curso" maxlength="8" placeholder="Ej. 9B" autocomplete="off" list="dlCursos"></label>
+    <label class="campo">Saldo inicial (en tu cuenta)<input data-r="saldo" class="num" inputmode="numeric" value="0"></label>
+    ${cfg.pinEstudiantes ? '<label class="campo">PIN del estudiante (opcional, 4 dígitos)<input data-r="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off"></label><p class="nota">Si lo dejas vacío, lo creará en su primer cobro. Que lo escriba el estudiante.</p>' : ''}
+    <p class="nota">En la tarjeta caben 24 letras del nombre y 8 del curso.</p>
+    <button class="grande" data-r="ir">Guardar y acercar la tarjeta</button><button class="sec" data-x>Cancelar</button>`;
+}
+function montarRegistro(cont, soloUid) {
+  cont.querySelector('[data-r=ir]').onclick = async () => {
+    const v = k => cont.querySelector(`[data-r=${k}]`)?.value.trim() || '';
+    const nombre = v('nombre'), curso = v('curso'), saldo = parseInt(v('saldo').replace(/\D/g, ''), 10) || 0, pin = v('pin');
+    if (!nombre) return toast('Escribe el nombre del estudiante.');
+    if (pin && !/^\d{4}$/.test(pin)) return toast('El PIN debe tener 4 dígitos.');
+    if (cfg.tope && saldo > cfg.tope) return toast(`El tope por movimiento es ${fmt(cfg.tope)} puntos.`);
+    if (!(await autorizar())) return;
+    cerrarHoja();
+    armar({ modo: 'registrar', nombre, curso, saldo, pin, soloUid });
+  };
+}
+
+function hojaRestaurar(s, cls, titulo, texto) {
+  const c = abrirHoja(`<div class="aviso ${cls}"><b>${esc(titulo)}</b><p>${esc(texto)}</p></div>
+    ${tarjetaHTML(s.t, '<span class="badge gris">Según el registro</span>')}
+    <button class="grande" data-r="rest">Restaurar ${fmt(s.t.saldo)} puntos y acercar</button><button class="sec" data-x>Cancelar</button>`);
+  c.querySelector('[data-r=rest]').onclick = async () => { if (!(await autorizar())) return; cerrarHoja(); armar({ modo: 'restaurar', soloUid: s.uid }); };
+}
+// El QR lleva exactamente el mismo enlace que la tarjeta: cualquier celular con cámara lo abre en Mis Puntos.
+function hojaQR(ev, vista) {
+  const all = new Uint8Array(ev.p.payload.length + 12); all.set(ev.p.payload); all.set(ev.p.sig, ev.p.payload.length);
+  const u = new URL('../saldo.html', location.href); u.search = ''; u.hash = 'd=' + b64e(all);
+  let svg = '<p class="nota">No se pudo generar el QR.</p>';
+  try { const q = qrcode(0, 'M'); q.addData(u.href); q.make(); const n = q.getModuleCount(); let d = ''; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+    svg = `<svg viewBox="-2 -2 ${n + 4} ${n + 4}" style="width:100%;max-width:320px;display:block;margin:0 auto;background:#fff;border-radius:16px" shape-rendering="crispEdges" role="img" aria-label="Código QR"><rect x="-2" y="-2" width="${n + 4}" height="${n + 4}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`; } catch (e) {}
+  abrirHoja(`<h3 style="margin-top:0;text-align:center">${esc(vista.nombre)}</h3>${svg}<p class="nota" style="text-align:center">Que lo escanee con la cámara de su celular. Verá lo mismo que si acercara la tarjeta, sin necesitar NFC.</p><button class="sec" data-x>Cerrar</button>`);
+}
+function hojaBloqueada(ev) {
+  sonar('error');
+  const n = db.students[ev.s.nuevaUid];
+  abrirHoja(`<div class="aviso bad"><b>Tarjeta bloqueada</b><p>Esta tarjeta fue reemplazada${n ? ' por la nueva tarjeta de ' + esc(n.t.nombre) : ''}. Ya no se puede usar.</p></div><button class="sec" data-x>Cerrar</button>`);
+}
+function agregarReciente(uid) { st.recientes = [uid, ...st.recientes.filter(x => x !== uid)].slice(0, 10); pintarRecientes(); }
+
+async function mostrarConsulta(ev) {
+  const s = ev.s;
+  if (ev.estado === 'ok') {
+    // Solo lectura: aquí nunca se escribe en la tarjeta.
+    const { t, movs, sync, alerta } = prepararT(ev), vista = clon(ev.t);
+    if (db.students[ev.uid].t.contador === vista.contador) { vista.nombre = t.nombre; vista.curso = t.curso; }
+    agregarReciente(ev.uid); sonar('dar');
+    abrirHoja(`${avisoAlerta(alerta)}${tarjetaHTML(vista, '<span class="badge">Verificada</span>')}${cuentasHTML(vista)}${cifrasHTML(vista)}
+      ${sync === 'actualizado' ? '<p class="nota">Saldo actualizado con lo que trae la tarjeta: otro docente hizo un movimiento.</p>' : ''}
+      ${sync === 'nuevo' ? '<p class="nota">Tarjeta registrada por otro docente. Se agregó a tu lista.</p>' : ''}
+      ${movs.length ? `<p class="nota">Cierre del periodo pendiente: se aplicará en su próximo movimiento.</p>` : ''}
+      <h3>En la tarjeta</h3>${movsTarjetaHTML(vista)}
+      <button class="sec" data-r="qr">Mostrar QR para el estudiante</button>
+      <button class="sec" data-x>Cerrar</button>`);
+    $('#hojaCont [data-r=qr]').onclick = () => hojaQR(ev, vista);
+    return;
+  }
+  sonar('error');
+  if (ev.estado === 'nueva') {
+    const c = abrirHoja(`<div class="aviso"><b>Tarjeta nueva</b><p>Todavía no tiene saldo. Regístrala para empezar a usarla.</p></div>${formRegistroHTML()}`);
+    montarRegistro(c, ev.uid);
+  } else if (ev.estado === 'vacia') {
+    hojaRestaurar(s, 'warn', 'La tarjeta está vacía', `La tarjeta de ${s.t.nombre} no tiene datos; pudo borrarse. El registro de este teléfono dice ${fmt(s.t.saldo)} puntos.`);
+  } else if (ev.estado === 'antigua') {
+    hojaRestaurar(s, 'bad', 'La tarjeta tiene un saldo viejo', `Muestra ${fmt(ev.t.saldo)} puntos (movimiento ${ev.t.contador}), pero el registro va en el movimiento ${s.t.contador} con ${fmt(s.t.saldo)} puntos. Puede que alguien haya regrabado una copia anterior.`);
+  } else if (ev.estado === 'alterada') {
+    const dice = ev.t ? `La tarjeta dice ${fmt(ev.t.saldo)} puntos, pero la firma no coincide` : 'Los datos de la tarjeta están incompletos';
+    if (s) hojaRestaurar(s, 'bad', 'Los datos de la tarjeta no son válidos', `${dice}: fue modificada fuera de la app, se escribió a medias o se firmó con otra clave.`);
+    else {
+      const c = abrirHoja(`<div class="aviso bad"><b>Tarjeta con datos no válidos</b><p>${dice}. Si viene de otro docente, revisen que usen la misma clave del banco. Si no, puedes registrarla de nuevo.</p></div>${formRegistroHTML()}`);
+      montarRegistro(c, ev.uid);
+    }
+  }
+}
+
+/* =========================================================
+   Preparar y armar movimientos
+   ========================================================= */
+async function prepararMovimiento(a) {
+  if (!db.clave) return pedirClave();
+  if (!(a.puntos > 0)) return toast('Escribe cuántos puntos.');
+  if (a.tipo !== 'canje') {
+    if (cfg.tope && a.puntos > cfg.tope) return toast(`El tope por movimiento es ${fmt(cfg.tope)} puntos. Puedes cambiarlo en Ajustes.`);
+    if (cfg.confirmarDesde && a.puntos >= cfg.confirmarDesde && !confirm(`¿Seguro? Vas a ${a.tipo === 'dar' ? 'dar' : 'cobrar'} ${fmt(a.puntos)} puntos.`)) return;
+  }
+  if (!(await autorizar())) return;
+  if (esCobro(a.tipo) && cfg.pinEstudiantes) {
+    const nom = a.soloUid ? db.students[a.soloUid]?.t.nombre : '';
+    const pin = await pedirPIN({ titulo: nom ? `${nom}, escribe tu PIN` : 'Estudiante: escribe tu PIN', texto: 'Si es tu primer cobro, este número queda como tu PIN.', largo: 4 });
+    if (!pin) return;
+    a.pin = pin;
+  }
+  cerrarHoja();
+  armar(a);
+}
+async function armar(a) {
+  if (!db.clave) { pedirClave(); return; }
+  if (!(await activarLector())) return;
+  st.verificando = null; st.armado = a; st.lote = new Set(); pintarArmado(); vibrar(15);
+}
+function desarmar() {
+  if (st.armado?.continuo && st.lote.size) toast(`Movimiento aplicado a ${st.lote.size} ${st.lote.size === 1 ? 'estudiante' : 'estudiantes'}.`);
+  st.armado = null; st.lote = new Set(); pintarArmado();
+}
+function pendientesLote(a) {
+  const todos = activos().filter(s => !a.curso || s.t.curso === a.curso);
+  return { total: todos.length, faltan: todos.filter(s => !st.lote.has(s.uid)) };
+}
+function pintarArmado() {
+  const a = st.armado, v = st.verificando, el = $('#armado');
+  $('#armFaltan').hidden = true;
+  if (!a && !v) { el.hidden = true; return; }
+  el.hidden = false;
+  if (!a) { el.className = 'armado'; $('#armTitulo').textContent = 'Acerca otra vez para confirmar'; $('#armSub').textContent = v.nombre; $('#armCancel').textContent = 'Omitir'; return; }
+  $('#armCancel').textContent = 'Terminar';
+  el.className = 'armado ' + (a.modo === 'mover' ? a.tipo : '');
+  const solo = a.soloUid ? 'Solo la tarjeta de ' + (db.students[a.soloUid]?.t.nombre || 'este estudiante') : '';
+  const T = (x, y) => { $('#armTitulo').textContent = x; $('#armSub').textContent = y; };
+  if (a.modo === 'mover') {
+    const titulo = a.tipo === 'canje' ? `Canjear: ${nombreMotivo('dar', a.codigo)}` : `${a.tipo === 'dar' ? 'Dar' : 'Cobrar'} ${fmt(a.puntos)} puntos`;
+    const cta = a.cuenta === 0 ? `Cuenta ${nombreCuenta(0)}. ` : '';
+    let sub = cta + (solo || `${nombreMotivo(a.tipo, a.codigo)}. Acerca la tarjeta`);
+    if (a.continuo) {
+      if (cfg.listaCurso && a.curso !== undefined) { const p = pendientesLote(a); sub = `${a.curso || 'Todos'}: listos ${st.lote.size} de ${p.total}`; $('#armFaltan').hidden = false; }
+      else sub = `${nombreMotivo(a.tipo, a.codigo)}. Listos: ${st.lote.size}`;
+    }
+    T(titulo, sub);
+  } else if (a.modo === 'registrar') T('Acerca la tarjeta para registrarla', a.nombre);
+  else if (a.modo === 'reemplazo') T('Acerca la tarjeta nueva', 'Reemplaza la de ' + (db.students[a.deUid]?.t.nombre || ''));
+  else if (a.modo === 'restaurar') T('Acerca la tarjeta para restaurarla', solo);
+  else if (a.modo === 'resetpin') T('Acerca la tarjeta para quitar el PIN', solo);
+  else if (a.modo === 'deshacer') T('Acerca la tarjeta para deshacer', solo);
+  else if (a.modo === 'personalizar') T('Acerca la tarjeta para personalizarla', solo);
+}
+$('#armCancel').onclick = () => { if (st.armado) desarmar(); else { st.verificando = null; pintarArmado(); } };
+$('#armFaltan').onclick = () => {
+  const p = pendientesLote(st.armado);
+  abrirHoja(`<h3 style="margin-top:0">Faltan ${p.faltan.length} de ${p.total}</h3>${p.faltan.length ? p.faltan.sort((x, y) => x.t.nombre.localeCompare(y.t.nombre, 'es')).map(s => `<div class="fila-est">${avatar(s.t)}<span class="nm"><b>${esc(s.t.nombre)}</b></span></div>`).join('') : '<p class="vacio">Ya pasaron todos.</p>'}<button class="sec" data-x>Cerrar</button>`);
+};
+
+const todosLosCursos = () => [...new Set([...(cfg.misCursos || []), ...activos().map(s => s.t.curso).filter(Boolean)])].sort((x, y) => x.localeCompare(y, 'es', { numeric: true }));
+const pintarDatalist = () => { $('#dlCursos').innerHTML = todosLosCursos().map(c => `<option value="${esc(c)}">`).join(''); };
+
+/* =========================================================
+   Pestaña Transferir
+   ========================================================= */
+const leerPuntos = () => parseInt($('#puntos').value, 10) || 0;
+function pintarMover() {
+  const fij = st.fijado && db.students[st.fijado]?.estado !== 'bloqueada' ? db.students[st.fijado] : null;
+  if (!fij) st.fijado = null;
+  $('#fijado').hidden = !fij;
+  if (fij) $('#fijadoNom').innerHTML = `<span class="av${emojiDe(fij.t) ? ' e' : ''}" style="${estilo(fij.t)}">${emojiDe(fij.t) || esc(iniciales(fij.t.nombre))}</span>Solo para ${esc(fij.t.nombre)}`;
+  if (st.tipo === 'canje' && !(cfg.canjes && canjesMios().length)) st.tipo = 'dar';
+  const segC = $('#segTipo [data-t=canje]'); segC.hidden = !(cfg.canjes && canjesMios().length);
+  if (!cfg.usarInstitucional) st.cuenta = 'mia';
+  $('#cuentaSel').hidden = !cfg.usarInstitucional || st.tipo === 'canje';
+  $$('#segCuenta button').forEach(b => b.classList.toggle('act', b.dataset.c === st.cuenta));
+  $$('#segTipo button').forEach(b => b.classList.toggle('act', b.dataset.t === st.tipo));
+  const ec = st.tipo === 'canje';
+  $('#bloqueNormal').hidden = ec; $('#bloqueCanje').hidden = !ec;
+  const sel = $('#motivo'), prev = sel.value;
+  sel.innerHTML = motivosPara(st.tipo === 'canje' ? 'cobrar' : st.tipo).map(m => `<option value="${esc(m.codigo)}">${esc(m.nombre)}</option>`).join('');
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  if (!canjesMios().some(c => c.codigo === st.canje)) st.canje = canjesMios()[0]?.codigo || '';
+  $('#listaCanjes').innerHTML = canjesMios().map(c => `<button class="canje ${c.codigo === st.canje ? 'act' : ''}" data-c="${esc(c.codigo)}"><span>${esc(c.nombre)}</span><b class="num">${fmt(c.precio)} pts</b></button>`).join('');
+  const sinLote = (esCobro(st.tipo) && cfg.pinEstudiantes) || !!st.fijado;
+  $('#swContinuo').classList.toggle('apagado', sinLote); $('#continuo').disabled = sinLote;
+  $('#continuoNota').textContent = st.fijado ? 'No aplica: el movimiento es para un solo estudiante.' : sinLote ? 'Con PIN de estudiantes, los cobros y canjes se hacen de uno en uno.' : 'El mismo movimiento se aplica a cada tarjeta que acerques, por ejemplo la asistencia de todo el curso.';
+  const lote = $('#continuo').checked && !sinLote;
+  $('#bloqueCurso').hidden = !(lote && cfg.listaCurso);
+  if (lote && cfg.listaCurso) {
+    const cursos = todosLosCursos();
+    const cs = $('#cursoLote'), pv = cs.value;
+    cs.innerHTML = '<option value="">Todos los cursos</option>' + cursos.map(c => `<option>${esc(c)}</option>`).join('');
+    cs.value = cursos.includes(pv) ? pv : '';
+  }
+  const btn = $('#btnArmar'), c = canjesMios().find(x => x.codigo === st.canje);
+  $('#cuentaCanje').hidden = !(ec && c);
+  if (ec && c) $('#cuentaCanje').textContent = 'Se paga con la cuenta ' + nombreCuenta(cuentaCanje(c)) + '.';
+  btn.className = 'grande ' + st.tipo;
+  btn.textContent = ec ? (c ? `Canjear por ${fmt(c.precio)} puntos` : 'No hay canjes en el catálogo') : `${st.tipo === 'dar' ? 'Dar' : 'Cobrar'} ${fmt(leerPuntos())} puntos`;
+}
+$('#segCuenta').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; st.cuenta = b.dataset.c; pintarMover(); };
+$('#segTipo').onclick = e => { const b = e.target.closest('button'); if (!b) return; st.tipo = b.dataset.t; pintarMover(); };
+$('#puntos').oninput = e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5); pintarMover(); };
+$('#menos').onclick = () => { $('#puntos').value = Math.max(1, leerPuntos() - 1); pintarMover(); };
+$('#mas').onclick = () => { $('#puntos').value = Math.min(99999, leerPuntos() + 1); pintarMover(); };
+$('#chipsMonto').onclick = e => { const b = e.target.closest('[data-p]'); if (!b) return; $('#puntos').value = b.dataset.p; pintarMover(); };
+$('#listaCanjes').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; st.canje = b.dataset.c; pintarMover(); };
+$('#continuo').onchange = pintarMover;
+$('#quitarFijado').onclick = () => { st.fijado = null; pintarMover(); };
+$('#btnArmar').onclick = () => {
+  const lote = $('#continuo').checked && !(esCobro(st.tipo) && cfg.pinEstudiantes) && !st.fijado;
+  const a = { modo: 'mover', tipo: st.tipo, obs: $('#obs').value.trim(), continuo: lote, soloUid: st.fijado || undefined };
+  if (st.tipo === 'canje') { const c = canjesMios().find(x => x.codigo === st.canje); if (!c) return toast('Elige qué canjea.'); a.puntos = c.precio; a.codigo = c.codigo; a.cuenta = cuentaCanje(c); }
+  else { a.puntos = leerPuntos(); a.codigo = $('#motivo').value; a.cuenta = st.cuenta === 'inst' && cfg.usarInstitucional ? 0 : cfg.codigoDocente; }
+  if (lote && cfg.listaCurso) a.curso = $('#cursoLote').value;
+  prepararMovimiento(a);
+};
+
+/* =========================================================
+   Pestañas Consultar y Estudiantes
+   ========================================================= */
+const avatar = t => `<span class="av${emojiDe(t) ? ' e' : ''}" style="${estilo(t)}">${emojiDe(t) || esc(iniciales(t.nombre))}</span>`;
+const filaEst = s => `<button class="fila-est" data-uid="${esc(s.uid)}">${avatar(s.t)}
+  <span class="nm"><b>${esc(s.t.nombre)}</b><small>${esc(s.t.curso || 'Sin curso')}${saldoCuenta(s.t, cfg.codigoDocente) ? ', en tu cuenta: ' + fmt(saldoCuenta(s.t, cfg.codigoDocente)) : ''}${s.t.periodo < cfg.periodo ? ', cierre pendiente' : ''}</small></span><span class="sd num">${fmt(s.t.saldo)}</span></button>`;
+function pintarRecientes() {
+  const arr = st.recientes.map(u => db.students[u]).filter(Boolean);
+  $('#recientes').innerHTML = arr.length ? arr.map(filaEst).join('') : '<p class="vacio">Aún no has consultado tarjetas en esta sesión.</p>';
+}
+$('#recientes').onclick = e => { const b = e.target.closest('[data-uid]'); if (b) detalleEstudiante(b.dataset.uid); };
+function pintarEstudiantes() {
+  const q = $('#buscar').value.trim().toLowerCase();
+  const arr = activos().sort((a, b) => (a.t.curso || '').localeCompare(b.t.curso || '', 'es') || a.t.nombre.localeCompare(b.t.nombre, 'es'));
+  $('#nEst').textContent = fmt(arr.length);
+  $('#sumPts').textContent = fmt(arr.reduce((s, x) => s + (x.t.saldo || 0), 0));
+  const f = arr.filter(s => !q || (s.t.nombre + ' ' + (s.t.curso || '')).toLowerCase().includes(q));
+  $('#listaEst').innerHTML = f.length ? f.map(filaEst).join('') : `<p class="vacio">${arr.length ? 'Nadie coincide con la búsqueda.' : 'Registra la primera tarjeta para empezar.'}</p>`;
+}
+$('#buscar').oninput = pintarEstudiantes;
+$('#listaEst').onclick = e => { const b = e.target.closest('[data-uid]'); if (b) detalleEstudiante(b.dataset.uid); };
+$('#btnRegistrar').onclick = () => { const c = abrirHoja(`<div class="aviso"><b>Registrar tarjeta nueva</b><p>Escribe los datos y luego acerca la tarjeta al teléfono.</p></div>${formRegistroHTML()}`); montarRegistro(c, null); };
+
+function detalleEstudiante(uid) {
+  const s = db.students[uid]; if (!s) return;
+  const d = st.deshacible, puedeDeshacer = cfg.deshacer && d && d.uid === uid && d.hasta > Date.now();
+  const c = abrirHoja(`${tarjetaHTML(s.t, '<span class="badge gris">Registro</span>')}${cuentasHTML(s.t)}${cifrasHTML(s.t)}
+    <button class="grande" data-e="mover">Dar, cobrar o canjear</button>
+    ${(cfg.reglaColor === 'estudiante' || cfg.emojis) ? '<button class="sec" data-e="personalizar">Personalizar tarjeta</button>' : ''}
+    ${puedeDeshacer ? '<button class="sec" data-e="deshacer">Deshacer el último movimiento</button>' : ''}
+    <h3>Historial en este teléfono</h3>${movsLocalesHTML([uid, ...(s.anteriores || [])], 40)}
+    <h3>Datos</h3>
+    <label class="campo">Nombre<input data-e="nombre" maxlength="40" value="${esc(s.t.nombre)}"></label>
+    <label class="campo">Curso<input data-e="curso" maxlength="8" list="dlCursos" value="${esc(s.t.curso || '')}"></label>
+    <p class="nota">Los cambios de nombre o curso se graban en la tarjeta en el próximo movimiento.</p>
+    <button class="sec" data-e="guardar">Guardar datos</button>
+    ${cfg.pinEstudiantes && s.t.pin ? '<button class="sec" data-e="pin">Quitar el PIN del estudiante</button>' : ''}
+    <button class="sec" data-e="reemplazo">Reemplazar tarjeta perdida o dañada</button>
+    <button class="sec peligro" data-e="quitar">Quitar del registro de este teléfono</button>`);
+  const on = (k, f) => { const b = c.querySelector(`[data-e=${k}]`); if (b) b.onclick = f; };
+  on('deshacer', iniciarDeshacer);
+  on('mover', () => { st.fijado = uid; $('#continuo').checked = false; cerrarHoja(); irA('mover'); });
+  on('personalizar', () => hojaPersonalizar(uid));
+  on('guardar', () => {
+    const n = c.querySelector('[data-e=nombre]').value.trim(); if (!n) return toast('El nombre no puede quedar vacío.');
+    s.t.nombre = n; s.t.curso = c.querySelector('[data-e=curso]').value.trim(); guardar(); pintarEstudiantes(); toast('Datos guardados.');
+  });
+  on('pin', async () => { if (!(await autorizar())) return; cerrarHoja(); armar({ modo: 'resetpin', soloUid: uid }); });
+  on('reemplazo', async () => {
+    if (!confirm(`La tarjeta actual de ${s.t.nombre} quedará bloqueada y su saldo pasará a una tarjeta nueva. ¿Continuar?`)) return;
+    if (!(await autorizar())) return; cerrarHoja(); armar({ modo: 'reemplazo', deUid: uid });
+  });
+  on('quitar', () => {
+    if (!confirm(`¿Quitar a ${s.t.nombre} de este teléfono? La tarjeta conserva su saldo y se puede volver a leer.`)) return;
+    delete db.students[uid]; guardar(); cerrarHoja(); pintarEstudiantes(); pintarRecientes();
+  });
+}
+
+function hojaPersonalizar(uid) {
+  const s = db.students[uid]; if (!s) return;
+  const prev = clon(s.t), elegirColor = cfg.reglaColor === 'estudiante';
+  const c = abrirHoja(`<div data-p="vista"></div>
+    ${elegirColor ? `<h3>Color</h3><div class="paleta" data-p="colores"></div>` : ''}
+    ${cfg.emojis ? `<h3>Emoji</h3><div class="emojis" data-p="emojis">${EMOJIS.map((e, i) => `<button data-i="${i}" aria-label="${i ? e : 'Sin emoji'}">${i ? e : '∅'}</button>`).join('')}</div>` : ''}
+    <p class="nota">Que lo elija el estudiante. Se guarda en su tarjeta y se ve igual en su celular.</p>
+    <button class="grande" data-p="ir">Guardar y acercar la tarjeta</button><button class="sec" data-x>Cancelar</button>`);
+  const pintar = () => {
+    c.querySelector('[data-p=vista]').innerHTML = tarjetaHTML(prev, '');
+    const pc = c.querySelector('[data-p=colores]');
+    if (pc) pc.innerHTML = PALETA.map((_, i) => i).map(i => {
+      const auto = i === 0, p = PALETA[auto ? colorCurso(prev.curso) : i];
+      return `<button data-i="${i}" title="${auto ? 'Color del curso' : p.n}" aria-label="${auto ? 'Color del curso' : p.n}" class="${(prev.color || 0) === i ? 'act' : ''}" style="background:${p.bg};color:${p.ink}">${auto ? 'Auto' : ''}</button>`;
+    }).join('');
+    c.querySelectorAll('[data-p=emojis] button').forEach(b => b.classList.toggle('act', +b.dataset.i === (prev.emoji || 0)));
+  };
+  c.addEventListener('click', e => {
+    const b = e.target.closest('[data-i]'); if (!b) return;
+    if (b.closest('[data-p=colores]')) prev.color = +b.dataset.i; else prev.emoji = +b.dataset.i;
+    pintar();
+  });
+  c.querySelector('[data-p=ir]').onclick = async () => {
+    if (!(await autorizar())) return;
+    cerrarHoja(); armar({ modo: 'personalizar', soloUid: uid, color: elegirColor ? (prev.color || 0) : 0, emoji: cfg.emojis ? (prev.emoji || 0) : 0 });
+  };
+  pintar();
+}
+
+/* =========================================================
+   Respaldo (CSV)
+   ========================================================= */
+const COL_SALDOS = ['uid', 'nombre', 'curso', 'saldo', 'cuentas', 'contador', 'ganado', 'gastado', 'registro', 'periodo', 'estado', 'reemplazada_por', 'anteriores', 'datos_tarjeta'];
+const COL_MOVS = ['id', 'fecha', 'uid', 'nombre', 'curso', 'tipo', 'puntos', 'codigo', 'motivo', 'observacion', 'cuenta', 'cuenta_nombre', 'saldo_cuenta', 'saldo', 'contador', 'docente', 'periodo'];
+function aCSV(filas, cols) {
+  const e = v => { v = v == null ? '' : String(v); return /[";\n\r,]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  return '\ufeff' + [cols.join(';'), ...filas.map(f => cols.map(c => e(f[c])).join(';'))].join('\r\n');
+}
+const csvSaldos = () => aCSV(Object.values(db.students).map(s => ({ uid: s.uid, nombre: s.t.nombre, curso: s.t.curso, saldo: s.t.saldo, cuentas: (s.t.cuentas || []).filter(x => x.s > 0).map(x => x.c + ':' + x.s).join(' '), contador: s.t.contador, ganado: s.t.ganado, gastado: s.t.gastado,
+  registro: isoDia(s.t.registro), periodo: s.t.periodo, estado: s.estado || 'activa', reemplazada_por: s.nuevaUid || '', anteriores: (s.anteriores || []).join(' '), datos_tarjeta: b64e(codificar(s.t)) })), COL_SALDOS);
+const csvMovs = () => aCSV(db.movs, COL_MOVS);
+function descargar(nombre, texto) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' })); a.download = nombre;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+const marcarRespaldo = () => { cfg.ultimoRespaldo = Date.now(); guardar(); pintarAjustes(); };
+async function compartirRespaldo() {
+  const fs = [new File([csvSaldos()], `saldos-${hoyISO()}.csv`, { type: 'text/csv' }), new File([csvMovs()], `movimientos-${hoyISO()}.csv`, { type: 'text/csv' })];
+  if (navigator.canShare && navigator.canShare({ files: fs })) {
+    try { await navigator.share({ files: fs, title: 'Respaldo Banco de Puntos' }); marcarRespaldo(); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  descargar(fs[0].name, csvSaldos()); setTimeout(() => descargar(fs[1].name, csvMovs()), 600); marcarRespaldo();
+}
+function leerCSV(txt) {
+  txt = txt.replace(/^\ufeff/, '');
+  const pl = txt.split(/\r?\n/)[0], sep = pl.split(';').length >= pl.split(',').length ? ';' : ',';
+  const filas = []; let f = [], v = '', q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { v += '"'; i++; } else q = false; } else v += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === sep) { f.push(v); v = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && txt[i + 1] === '\n') i++; f.push(v); filas.push(f); f = []; v = ''; }
+    else v += ch;
+  }
+  if (v !== '' || f.length) { f.push(v); filas.push(f); }
+  const cab = (filas.shift() || []).map(h => h.trim().toLowerCase());
+  return { cab, filas: filas.filter(r => r.some(x => x.trim() !== '')).map(r => Object.fromEntries(cab.map((h, i) => [h, (r[i] ?? '').trim()]))) };
+}
+$('#compartir').onclick = compartirRespaldo;
+$('#expSaldos').onclick = () => { descargar(`saldos-${hoyISO()}.csv`, csvSaldos()); marcarRespaldo(); };
+$('#expMovs').onclick = () => { descargar(`movimientos-${hoyISO()}.csv`, csvMovs()); marcarRespaldo(); };
+$('#impCSV').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  const { cab, filas } = leerCSV(await file.text());
+  const num = (r, k, d) => { const v = parseInt(r[k], 10); return Number.isFinite(v) ? v : d; };
+  if (cab.includes('tipo') && cab.includes('puntos')) {
+    const ids = new Set(db.movs.map(m => m.id)); let n = 0;
+    for (const r of filas) {
+      if (!r.id || ids.has(r.id)) continue;
+      db.movs.push({ ...r, uid: (r.uid || '').toUpperCase(), cuenta: num(r, 'cuenta', 0), saldo_cuenta: num(r, 'saldo_cuenta', 0), puntos: num(r, 'puntos', 0), saldo: num(r, 'saldo', 0), contador: num(r, 'contador', 0), periodo: num(r, 'periodo', 1) });
+      ids.add(r.id); n++;
+    }
+    db.movs.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha))); guardar();
+    toast(`${n} movimientos importados.`);
+  } else if (cab.includes('uid') && cab.includes('saldo')) {
+    let nuevos = 0, act = 0;
+    for (const r of filas) {
+      const uid = (r.uid || '').toUpperCase(); if (!uid) continue;
+      let t = null; try { if (r.datos_tarjeta) t = decodificar(b64d(r.datos_tarjeta)); } catch (_) {}
+      t = t || tNueva(r.nombre || 'Sin nombre', r.curso || '');
+      const ctas = (r.cuentas || '').trim();
+      if (ctas) t.cuentas = ctas.split(/\s+/).map(x => x.split(':').map(Number)).filter(([c, v]) => c >= 0 && c <= 255 && v >= 0 && Number.isFinite(v)).map(([c, v]) => ({ c, s: v }));
+      else if (!r.datos_tarjeta && r.saldo) t.cuentas = [{ c: 0, s: Math.max(0, num(r, 'saldo', 0)) }];
+      recalcular(t); t.contador = num(r, 'contador', t.contador);
+      t.ganado = num(r, 'ganado', t.ganado); t.gastado = num(r, 'gastado', t.gastado);
+      t.periodo = Math.min(255, Math.max(1, num(r, 'periodo', t.periodo)));
+      if (r.nombre) t.nombre = r.nombre; if (r.curso !== undefined) t.curso = r.curso;
+      const bloqueada = r.estado === 'bloqueada', s = db.students[uid];
+      if (!s) { db.students[uid] = { uid, t, estado: bloqueada ? 'bloqueada' : 'activa', nuevaUid: r.reemplazada_por || undefined, anteriores: (r.anteriores || '').split(/\s+/).filter(Boolean) }; nuevos++; }
+      else {
+        if (t.contador > s.t.contador) { s.t = t; act++; }
+        if (bloqueada && s.estado !== 'bloqueada') { s.estado = 'bloqueada'; s.nuevaUid = r.reemplazada_por || s.nuevaUid; act++; }
+      }
+    }
+    guardar(); toast(`${nuevos} estudiantes nuevos, ${act} actualizados.`);
+  } else toast('No reconozco ese CSV. Usa uno exportado desde esta app.');
+  pintarAjustes(); pintarEstudiantes(); pintarMover();
+};
+function revisarRespaldo() {
+  if (!cfg.recordatorio || !activos().length || !$('#hoja').hidden) return;
+  const dias = cfg.ultimoRespaldo ? Math.floor((Date.now() - cfg.ultimoRespaldo) / 864e5) : null;
+  if (dias !== null && dias < 7) return;
+  const c = abrirHoja(`<div class="aviso warn"><b>Toca hacer un respaldo</b><p>${dias === null ? 'Aún no has hecho ningún respaldo.' : `Tu último respaldo fue hace ${dias} días.`} Envíalo a tu correo, WhatsApp o Drive para no perder el registro si cambias de teléfono.</p></div>
+    <button class="grande" data-r="ya">Compartir respaldo</button><button class="sec" data-x>Más tarde</button>`);
+  c.querySelector('[data-r=ya]').onclick = () => { cerrarHoja(); compartirRespaldo(); };
+}
+
+/* =========================================================
+   Pestaña Ajustes
+   ========================================================= */
+function pintarAjustes() {
+  $$('[data-cfg]').forEach(el => { const k = el.dataset.cfg; if (el.type === 'checkbox') el.checked = !!cfg[k]; else if (document.activeElement !== el) el.value = cfg[k] ?? ''; });
+  if (document.activeElement !== $('#cfgClave')) $('#cfgClave').value = db.clave;
+  if (document.activeElement !== $('#cfgCursos')) $('#cfgCursos').value = (cfg.misCursos || []).join(', ');
+  pintarDatalist();
+  $('#pinDocEstado').textContent = cfg.pinDocente ? 'Activo. Siempre se pide para entrar a Ajustes.' : 'Sin PIN. Cualquiera con tu teléfono puede usar la app.';
+  $('#btnPinDoc').textContent = cfg.pinDocente ? 'Cambiar' : 'Crear';
+  $('#pinDocOpc').hidden = !cfg.pinDocente;
+  $('#campoPorc').hidden = cfg.reglaCierre !== 'porcentaje';
+  $('#campoColorUnico').hidden = cfg.reglaColor !== 'unico';
+  $('#notaColor').textContent = { curso: 'Cada curso recibe un color automáticamente; todas las tarjetas del mismo curso se ven iguales.', estudiante: 'Si un estudiante no ha elegido, se usa el color de su curso. Se elige en su ficha.', unico: 'Todas las tarjetas tendrán este color:' }[cfg.reglaColor];
+  $('#paletaUnico').innerHTML = PALETA.slice(1).map((p, i) => `<button data-u="${i + 1}" title="${p.n}" aria-label="${p.n}" class="${cfg.colorUnico === i + 1 ? 'act' : ''}" style="background:${p.bg}"></button>`).join('');
+  $('#periodoActual').textContent = cfg.periodo;
+  $('#cerrarPeriodo').textContent = `Cerrar el periodo ${cfg.periodo} e iniciar el ${cfg.periodo + 1}`;
+  const dias = cfg.ultimoRespaldo ? Math.floor((Date.now() - cfg.ultimoRespaldo) / 864e5) : null;
+  $('#statsDatos').textContent = `En este teléfono: ${fmt(activos().length)} estudiantes y ${fmt(db.movs.length)} movimientos. ${dias === null ? 'Aún no hay respaldos.' : dias === 0 ? 'Último respaldo: hoy.' : `Último respaldo: hace ${dias} días.`}`;
+  $('#catInfo').textContent = `Versión ${cat.version ?? '?'}: ${cat.motivos.length} motivos, ${canjes().length} canjes, ${(cat.docentes || []).length} docentes. Para cambiarlo, edita catalogo.json en GitHub.`;
+}
+$$('[data-cfg]').forEach(el => el.addEventListener('change', () => {
+  const k = el.dataset.cfg;
+  let v = el.type === 'checkbox' ? el.checked : el.type === 'number' ? Math.max(0, parseInt(el.value, 10) || 0) : el.value.trim();
+  if (k === 'codigoDocente') v = Math.min(255, Math.max(1, v || 1));
+  if (k === 'porcentaje') v = Math.min(100, v);
+  cfg[k] = v; guardar(); pintarAjustes(); pintarMover();
+}));
+$('#guardarClave').onclick = () => {
+  const v = $('#cfgClave').value;
+  if (v.length < 6) return toast('La clave debe tener al menos 6 caracteres.');
+  if (db.clave && v !== db.clave && !confirm('Con una clave nueva, las tarjetas actuales aparecerán como no válidas hasta restaurarlas una por una. ¿Cambiarla?')) return;
+  db.clave = v; guardar(); toast('Clave guardada.');
+};
+$('#btnPinDoc').onclick = async () => {
+  const p1 = await pedirPIN({ titulo: 'Nuevo PIN del docente', texto: 'De 4 a 6 dígitos.', min: 4, max: 6 }); if (!p1) return;
+  const p2 = await pedirPIN({ titulo: 'Repite el PIN', min: 4, max: 6 }); if (!p2) return;
+  if (p1 !== p2) return toast('Los PIN no coinciden.');
+  const salt = b64e(crypto.getRandomValues(new Uint8Array(8)));
+  cfg.pinDocente = { salt, hash: await sha(salt + '|' + p1) }; guardar();
+  st.desbloqueadoHasta = Date.now() + 5 * 60e3; pintarAjustes(); toast('PIN del docente guardado.');
+};
+$('#quitarPinDoc').onclick = () => {
+  if (!confirm('¿Quitar el PIN del docente? La app y los ajustes quedarán sin protección.')) return;
+  cfg.pinDocente = null; cfg.pinAlAbrir = false; cfg.pinCadaMov = false; guardar(); pintarAjustes(); toast('PIN del docente quitado.');
+};
+$('#cerrarPeriodo').onclick = () => {
+  const regla = { conservar: 'los saldos se conservan completos', reiniciar: 'los saldos vuelven a 0', porcentaje: `se conserva el ${cfg.porcentaje} % de cada saldo` }[cfg.reglaCierre];
+  if (!confirm(`Se cerrará el periodo ${cfg.periodo}: ${regla}. Cada tarjeta se ajusta la próxima vez que se acerque. ¿Continuar?`)) return;
+  cfg.periodo = Math.min(255, cfg.periodo + 1); guardar(); pintarAjustes(); pintarEstudiantes(); toast(`Periodo ${cfg.periodo} iniciado.`);
+};
+$('#recargarCat').onclick = () => actualizarCatalogo(true);
+$('#cfgCursos').onchange = () => { cfg.misCursos = [...new Set($('#cfgCursos').value.split(',').map(x => x.trim().slice(0, 8)).filter(Boolean))]; guardar(); pintarAjustes(); pintarMover(); toast('Cursos guardados.'); };
+$('#paletaUnico').onclick = e => { const b = e.target.closest('[data-u]'); if (!b) return; cfg.colorUnico = +b.dataset.u; guardar(); pintarAjustes(); };
+
+function pedirClave() {
+  const c = abrirHoja(`<div class="aviso"><b>Antes de empezar</b><p>Crea la clave del banco. Con ella se firma cada tarjeta para detectar cambios hechos fuera de la app. Si otros docentes van a usar las mismas tarjetas, deben poner exactamente la misma clave.</p></div>
+    <label class="campo">Clave del banco (mínimo 6 caracteres)<input data-k="clave" type="password" autocomplete="off"></label>
+    <label class="campo">Tu nombre<input data-k="docente" maxlength="40" placeholder="Ej. Prof. Ramírez"></label>
+    <p class="nota">Todo lo demás (PIN, canjes, límites) es opcional y se activa en Ajustes.</p>
+    <button class="grande" data-k="ok">Guardar y empezar</button>`, true);
+  c.querySelector('[data-k=ok]').onclick = () => {
+    const v = c.querySelector('[data-k=clave]').value;
+    if (v.length < 6) return toast('La clave debe tener al menos 6 caracteres.');
+    db.clave = v; cfg.docente = c.querySelector('[data-k=docente]').value.trim(); guardar(); cerrarHoja();
+    if (!NFC) setTimeout(hojaSinNFC, 300);
+  };
+}
+
+/* =========================================================
+   Navegación e inicio
+   ========================================================= */
+async function irA(t) {
+  if (t === 'ajustes' && cfg.pinDocente && Date.now() > st.desbloqueadoHasta && !(await verificarPinDocente('Para entrar a Ajustes.'))) return;
+  $$('.tab').forEach(s => s.hidden = s.dataset.tab !== t);
+  $$('.tabbar button').forEach(b => b.classList.toggle('act', b.dataset.ir === t));
+  if (t === 'estudiantes') pintarEstudiantes();
+  if (t === 'ajustes') pintarAjustes();
+  if (t === 'consultar') pintarRecientes();
+  if (t === 'mover') pintarMover();
+  window.scrollTo(0, 0);
+}
+$$('.tabbar button').forEach(b => b.onclick = () => irA(b.dataset.ir));
+
+(async () => {
+  pintarMover(); pintarLector(); pintarAjustes();
+  actualizarCatalogo(false);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js', { scope: '../' }).catch(() => {});
+  if (!db.clave) pedirClave();
+  else if (cfg.pinDocente && cfg.pinAlAbrir) await bloquearApp();
+  if (NFC) { try { const p = await navigator.permissions.query({ name: 'nfc' }); if (p.state === 'granted') activarLector(); } catch (e) {} }
+  setTimeout(revisarRespaldo, 800);
+})();
+</script>
+</body>
+</html>

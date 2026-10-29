@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffc93c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../icon-mis-puntos-192.png">
+<link rel="apple-touch-icon" href="../icon-mis-puntos-192.png">
+<title>Mis Puntos</title>
+<link rel="stylesheet" href="../nucleo.css">
+<style>
+.quien{display:flex;align-items:center;gap:10px;border:0;background:var(--surface);color:var(--ink);font:inherit;font-weight:800;padding:6px 12px 6px 6px;border-radius:999px;max-width:70%}
+.quien span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quien .av{width:32px;height:32px;font-size:12px}
+.quien .av.e{font-size:18px}
+.cambio-u{text-align:center;font-size:17px;font-weight:800;margin:14px 0 0}
+.leido{text-align:center;color:var(--muted);font-size:14px;margin-top:8px}
+.premio{background:var(--surface);border-radius:18px;padding:14px 16px;margin-top:10px}
+.premio .cab{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.premio .cab b{font-size:17px}
+.premio .cab span{font-weight:800;white-space:nowrap}
+.barra{height:12px;border-radius:999px;background:var(--surface2);margin:10px 0 6px;overflow:hidden}
+.barra i{display:block;height:100%;border-radius:999px;background:var(--dar)}
+.premio small{color:var(--muted)}
+.premio.listo{outline:2px solid var(--dar)}
+.ayuda p{margin:6px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mis Puntos</h1>
+  <button class="quien" id="quien" hidden></button>
+</header>
+
+<main>
+  <section class="tab" data-tab="tarjeta">
+    <div id="sinDatos" class="panel espera" hidden>
+      <p><b>Acerca tu tarjeta</b> a la parte de atrás del celular.</p>
+      <p class="nota">Si tu celular no tiene NFC, pídele a tu docente que te muestre el código QR de tu tarjeta y escanéalo con la cámara.</p>
+    </div>
+    <div id="conDatos" hidden>
+      <div id="vTarjeta"></div>
+      <p class="cambio-u" id="cambio"></p>
+      <p class="leido" id="leido"></p>
+      <h2>Mis cuentas</h2><div id="vCuentas"></div>
+      <div id="vCifras"></div>
+      <h2>Últimos movimientos</h2><div id="vMovs"></div>
+    </div>
+  </section>
+
+  <section class="tab" data-tab="tienda" hidden>
+    <p class="nota" style="margin-top:0">Los canjes los hace tu docente con tu tarjeta. Aquí ves cuánto te falta para cada uno.</p>
+    <div id="vTienda"></div>
+  </section>
+
+  <section class="tab" data-tab="evolucion" hidden>
+    <div class="grafica" id="vGrafica"></div>
+    <h2>Mis consultas</h2>
+    <div id="vHist" class="movs" style="background:var(--surface);border-radius:16px;padding:0 14px"></div>
+  </section>
+
+  <section class="tab" data-tab="mas" hidden>
+    <h2>Personalizar en este celular</h2>
+    <div class="panel">
+      <p class="nota" style="margin-top:0">Cambia cómo ves tu tarjeta aquí. No cambia la tarjeta física ni lo que ve tu docente.</p>
+      <div class="paleta" id="pColores"></div>
+      <div class="emojis" id="pEmojis" style="margin-top:12px"></div>
+      <button class="sec" id="pQuitar">Volver al diseño original</button>
+    </div>
+    <h2>Tarjetas guardadas</h2>
+    <p class="nota">Si eres acudiente, puedes guardar las tarjetas de varios hijos: acerca o escanea cada una.</p>
+    <div id="vPerfiles" class="lista"></div>
+    <h2>Cómo ver mis puntos</h2>
+    <div class="panel ayuda">
+      <p><b>Con NFC:</b> acerca la tarjeta a la parte de atrás del celular. Se abre esta página con tus puntos.</p>
+      <p><b>Sin NFC:</b> tu docente puede mostrarte un código QR con tus puntos. Escanéalo con la cámara.</p>
+      <p><b>Sin internet:</b> después de abrirla una vez, la app funciona sin conexión.</p>
+      <p class="nota">Lo que ves es lo que tenía la tarjeta al leerla. Para ver los puntos más recientes, vuelve a acercarla. El registro oficial lo lleva tu docente.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar"><div>
+  <button data-ir="tarjeta" class="act"><svg viewBox="10 0 24 24"><rect x="11" y="5" width="22" height="14" rx="3"/><path d="M11 10h22"/></svg>Tarjeta</button>
+  <button data-ir="tienda"><svg viewBox="10 0 24 24"><path d="M13 9h18l-2 11H15z"/><path d="M18 9a4 4 0 0 1 8 0"/></svg>Canjes</button>
+  <button data-ir="evolucion"><svg viewBox="10 0 24 24"><path d="M12 18l6-6 4 4 9-9"/></svg>Evolución</button>
+  <button data-ir="mas"><svg viewBox="10 0 24 24"><circle cx="16" cy="12" r="1.5"/><circle cx="22" cy="12" r="1.5"/><circle cx="28" cy="12" r="1.5"/></svg>Más</button>
+</div></nav>
+
+<script src="../nucleo.js"></script>
+<script>
+'use strict';
+const { $, $$, esc, fmt } = BP;
+const KEY = 'misPuntos.v3';
+const D = (() => { try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.perfiles) return d; } catch (e) {} return { perfiles: {}, actual: '' }; })();
+const guardar = () => { try { localStorage.setItem(KEY, JSON.stringify(D)); } catch (e) {} };
+const claveDe = t => `${t.nombre}|${t.curso}|${t.registro ?? ''}`;
+const perfil = () => D.perfiles[D.actual];
+// Vista con la personalización local aplicada (solo en este celular).
+const vistaDe = pf => { const t = BP.clon(pf.ultimo.t); if (pf.local) { if (pf.local.color != null) t.color = pf.local.color; if (pf.local.emoji != null) t.emoji = pf.local.emoji; } return t; };
+
+/* ---------- Lectura desde el enlace (NFC o QR) ---------- */
+let cambio = null;
+const leida = BP.leerTexto(location.hash);
+if (location.hash) history.replaceState(null, '', location.pathname);
+if (leida && leida.t) {
+  const t = leida.t, k = claveDe(t), pf = D.perfiles[k] || (D.perfiles[k] = { snaps: [] });
+  const previa = pf.ultimo;
+  if (!previa || previa.t.contador !== t.contador) pf.snaps.push({ f: new Date().toISOString(), saldo: t.saldo, c: t.contador });
+  pf.snaps = pf.snaps.slice(-120);
+  if (previa && previa.t.contador !== t.contador) cambio = t.saldo - previa.t.saldo;
+  pf.ultimo = { t, f: new Date().toISOString() }; D.actual = k; guardar();
+} else if (leida) BP.toast('No se pudo leer la tarjeta. Pide a tu docente que la revise.');
+if (!D.perfiles[D.actual]) D.actual = Object.keys(D.perfiles)[0] || '';
+
+/* ---------- Tarjeta ---------- */
+function pintarTarjeta() {
+  const pf = perfil();
+  $('#sinDatos').hidden = !!pf; $('#conDatos').hidden = !pf;
+  const q = $('#quien'); q.hidden = !pf || Object.keys(D.perfiles).length < 2;
+  if (!pf) return;
+  const t = vistaDe(pf);
+  if (!q.hidden) q.innerHTML = `${BP.avatar(t)}<span>${esc(t.nombre)}</span>`;
+  $('#vTarjeta').innerHTML = BP.tarjetaHTML(t, t.periodo ? `<span class="badge">Periodo ${t.periodo}</span>` : '');
+  document.querySelector('meta[name=theme-color]').content = BP.temaDe(t).bg;
+  const c = $('#cambio');
+  c.textContent = cambio === null ? '' : cambio === 0 ? 'Mismo saldo que en tu última consulta' : `${cambio > 0 ? '+' : '−'}${fmt(Math.abs(cambio))} puntos desde tu última consulta`;
+  c.className = 'cambio-u ' + (cambio > 0 ? 'pos' : cambio < 0 ? 'neg' : '');
+  $('#leido').textContent = 'Leída el ' + BP.cuando(pf.ultimo.f);
+  $('#vCuentas').innerHTML = BP.cuentasHTML(t) || '<p class="vacio">Aún no tienes puntos.</p>';
+  $('#vCifras').innerHTML = `<div class="cifras"><div><b class="num pos">${fmt(t.ganado)}</b><small>ganados en total</small></div><div><b class="num neg">${fmt(t.gastado)}</b><small>gastados en total</small></div></div>`;
+  $('#vMovs').innerHTML = BP.movsTarjetaHTML(t);
+}
+$('#quien').onclick = () => irA('mas');
+
+/* ---------- Canjes con metas ---------- */
+function pintarTienda() {
+  const pf = perfil(), cj = BP.cat.canjes || [];
+  if (!pf) { $('#vTienda').innerHTML = '<p class="vacio">Acerca tu tarjeta primero.</p>'; return; }
+  if (!cj.length) { $('#vTienda').innerHTML = '<p class="vacio">Tu colegio todavía no ha publicado canjes.</p>'; return; }
+  const t = pf.ultimo.t, docentes = (t.cuentas || []).filter(x => x.c !== 0);
+  const filas = cj.map(c => {
+    let disp, de;
+    if ((c.cuenta || 'docente') === 'institucional') { disp = BP.saldoCuenta(t, 0); de = 'con tu cuenta ' + BP.nombreCuenta(0); }
+    else if (c.docente) { disp = BP.saldoCuenta(t, c.docente); de = 'con tu cuenta de ' + BP.nombreDocente(c.docente); }
+    else { const m = docentes.sort((a, b) => b.s - a.s)[0]; disp = m ? m.s : 0; de = m ? 'con la cuenta de un docente (tu mayor: ' + BP.nombreCuenta(m.c) + ')' : 'con la cuenta de un docente'; }
+    return { c, disp, de, avance: Math.min(1, disp / c.precio) };
+  }).sort((a, b) => b.avance - a.avance);
+  $('#vTienda').innerHTML = filas.map(f => `<div class="premio ${f.avance >= 1 ? 'listo' : ''}"><div class="cab"><b>${esc(f.c.nombre)}</b><span class="num">${fmt(f.c.precio)} pts</span></div>
+    <div class="barra"><i style="width:${Math.round(f.avance * 100)}%"></i></div>
+    <small>${f.avance >= 1 ? '<b class="pos">¡Te alcanza!</b> ' : `Te faltan <b>${fmt(f.c.precio - f.disp)}</b> puntos `}${esc(f.de)}.</small></div>`).join('');
+}
+
+/* ---------- Evolución ---------- */
+function pintarEvolucion() {
+  const pf = perfil();
+  if (!pf) { $('#vGrafica').innerHTML = '<p class="vacio">Acerca tu tarjeta primero.</p>'; $('#vHist').innerHTML = ''; return; }
+  const s = pf.snaps;
+  if (s.length < 2) $('#vGrafica').innerHTML = '<p class="vacio" style="padding:12px">Tu gráfica aparecerá cuando consultes tu tarjeta en al menos dos momentos distintos.</p>';
+  else {
+    const W = 340, H = 180, P = 28, max = Math.max(...s.map(x => x.saldo), 1);
+    const xs = i => P + i * (W - 2 * P) / (s.length - 1), ys = v => H - P - v * (H - 2 * P) / max;
+    const pts = s.map((x, i) => `${xs(i).toFixed(1)},${ys(x.saldo).toFixed(1)}`).join(' ');
+    $('#vGrafica').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolución de mis puntos">
+      <line x1="${P}" y1="${H - P}" x2="${W - P}" y2="${H - P}" stroke="var(--line)"/>
+      <polyline points="${pts}" fill="none" stroke="var(--dar)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      ${s.map((x, i) => `<circle cx="${xs(i)}" cy="${ys(x.saldo)}" r="4" fill="var(--dar)"/>`).join('')}
+      <text x="${P}" y="${H - 8}">${BP.fechaCorta(s[0].f)}</text><text x="${W - P}" y="${H - 8}" text-anchor="end">${BP.fechaCorta(s[s.length - 1].f)}</text>
+      <text x="${P}" y="${ys(max) - 8}">${fmt(max)} pts</text></svg>`;
+  }
+  $('#vHist').innerHTML = s.slice().reverse().map((x, i, a) => { const d = i < a.length - 1 ? x.saldo - a[i + 1].saldo : null;
+    return `<div class="mov"><span><b class="num">${fmt(x.saldo)} pts</b><small>${BP.cuando(x.f)}</small></span>${d === null ? '' : BP.signo(d)}</div>`; }).join('');
+}
+
+/* ---------- Más: personalizar y perfiles ---------- */
+function pintarMas() {
+  const pf = perfil(), t = pf ? vistaDe(pf) : null;
+  $('#pColores').innerHTML = BP.PALETA.map((p, i) => i ? `<button data-col="${i}" aria-label="${p.n}" title="${p.n}" class="${t && t.color === i ? 'act' : ''}" style="background:${p.bg}"></button>` : '').join('');
+  $('#pEmojis').innerHTML = BP.EMOJIS.map((e, i) => `<button data-emo="${i}" aria-label="${i ? e : 'Sin emoji'}" class="${t && (t.emoji || 0) === i ? 'act' : ''}">${i ? e : '∅'}</button>`).join('');
+  $('#vPerfiles').innerHTML = Object.entries(D.perfiles).map(([k, p]) => { const v = vistaDe(p);
+    return `<div class="fila-est"><button class="nm" data-ver="${esc(k)}" style="border:0;background:none;text-align:left;font:inherit;color:inherit;display:flex;align-items:center;gap:12px">${BP.avatar(v)}<span><b>${esc(v.nombre)}</b><small>${esc(v.curso || '')}, ${fmt(v.saldo)} pts${k === D.actual ? ', viendo ahora' : ''}</small></span></button><button class="mini" data-borrar="${esc(k)}">Quitar</button></div>`; }).join('') || '<p class="vacio">Aún no hay tarjetas guardadas.</p>';
+}
+$('#pColores').onclick = e => { const b = e.target.closest('[data-col]'); const pf = perfil(); if (!b || !pf) return; pf.local = Object.assign(pf.local || {}, { color: +b.dataset.col }); guardar(); pintarMas(); pintarTarjeta(); };
+$('#pEmojis').onclick = e => { const b = e.target.closest('[data-emo]'); const pf = perfil(); if (!b || !pf) return; pf.local = Object.assign(pf.local || {}, { emoji: +b.dataset.emo }); guardar(); pintarMas(); pintarTarjeta(); };
+$('#pQuitar').onclick = () => { const pf = perfil(); if (!pf) return; delete pf.local; guardar(); pintarMas(); pintarTarjeta(); };
+$('#vPerfiles').onclick = e => {
+  const v = e.target.closest('[data-ver]'), b = e.target.closest('[data-borrar]');
+  if (v) { D.actual = v.dataset.ver; cambio = null; guardar(); pintarMas(); irA('tarjeta'); }
+  if (b && confirm('¿Quitar esta tarjeta de este celular? Se borra también su historial de consultas aquí.')) { delete D.perfiles[b.dataset.borrar]; if (D.actual === b.dataset.borrar) D.actual = Object.keys(D.perfiles)[0] || ''; guardar(); pintarMas(); pintarTarjeta(); }
+};
+
+/* ---------- Navegación ---------- */
+function irA(t) {
+  $$('.tab').forEach(s => s.hidden = s.dataset.tab !== t);
+  $$('.tabbar button').forEach(b => b.classList.toggle('act', b.dataset.ir === t));
+  ({ tarjeta: pintarTarjeta, tienda: pintarTienda, evolucion: pintarEvolucion, mas: pintarMas })[t]();
+  scrollTo(0, 0);
+}
+$$('.tabbar button').forEach(b => b.onclick = () => irA(b.dataset.ir));
+BP.montarUI(); BP.registrarSW(); pintarTarjeta();
+BP.actualizarCatalogo().then(ok => { if (ok) { pintarTarjeta(); if (!$('[data-tab=tienda]').hidden) pintarTienda(); } });
+</script>
+</body>
+</html>
