@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<link rel="icon" href="icon-192.png">
+<title>Banco de Puntos: apps</title>
+<link rel="stylesheet" href="nucleo.css">
+<style>
+.app{display:flex;align-items:center;gap:16px;background:var(--surface);border-radius:20px;padding:14px 16px;margin-top:10px;color:var(--ink);text-decoration:none}
+.app img{width:56px;height:56px;border-radius:14px;flex:none}
+.app b{display:block;font-size:18px}
+.app small{color:var(--muted)}
+main{padding-bottom:40px}
+</style>
+</head>
+<body>
+<header><h1>Banco de Puntos</h1></header>
+<main>
+  <p class="nota" style="margin-top:0">Elige una app. Para tenerla en tu pantalla de inicio, ábrela y en el menú de Chrome toca «Agregar a pantalla principal» o «Instalar app». Repite con cada una.</p>
+  <h2>Para docentes</h2>
+  <a class="app" href="banco/"><img src="icon-192.png" alt=""><span><b>Banco de Puntos</b><small>Dar, cobrar, canjear y consultar tarjetas.</small></span></a>
+  <a class="app" href="asistencia/"><img src="icon-asistencia-192.png" alt=""><span><b>Asistencia</b><small>Sesiones por curso con las tarjetas.</small></span></a>
+  <a class="app" href="informes/"><img src="icon-informes-192.png" alt=""><span><b>Informes</b><small>Estadísticas, tablas y hoja de QR. También en computador.</small></span></a>
+  <h2>Para estudiantes y familias</h2>
+  <a class="app" href="mis-puntos/"><img src="icon-mis-puntos-192.png" alt=""><span><b>Mis Puntos</b><small>Saldo, canjes y avances. Se abre también al acercar la tarjeta.</small></span></a>
+</main>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>

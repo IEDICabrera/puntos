@@ -1,0 +1,100 @@
+{
+  "version": 2,
+  "nota": "Códigos de 2 caracteres (letras mayúsculas o números). Nunca reutilices un código con otro significado: si uno deja de usarse, agrega uno nuevo. Los códigos de motivos y de canjes no deben repetirse entre sí. Motivos, tipo: dar, cobrar o ambos. Canjes, cuenta: 'docente' (lo cobra cualquier docente con su propia cuenta; si se agrega 'docente': N, solo lo cobra ese docente) o 'institucional' (se paga con la cuenta común).",
+  "nombreInstitucional": "Institucional",
+  "motivos": [
+    {
+      "codigo": "AC",
+      "nombre": "Ayuda en clase",
+      "tipo": "dar"
+    },
+    {
+      "codigo": "TA",
+      "nombre": "Tarea",
+      "tipo": "dar"
+    },
+    {
+      "codigo": "TE",
+      "nombre": "Trabajo extra",
+      "tipo": "dar"
+    },
+    {
+      "codigo": "PA",
+      "nombre": "Participación",
+      "tipo": "dar"
+    },
+    {
+      "codigo": "AS",
+      "nombre": "Asistencia",
+      "tipo": "dar"
+    },
+    {
+      "codigo": "AI",
+      "nombre": "Actividad institucional",
+      "tipo": "dar"
+    },
+    {
+      "codigo": "EN",
+      "nombre": "Encargo cumplido",
+      "tipo": "dar"
+    },
+    {
+      "codigo": "EV",
+      "nombre": "Mejora de evaluación",
+      "tipo": "cobrar"
+    },
+    {
+      "codigo": "AA",
+      "nombre": "Acuerdo de aula incumplido",
+      "tipo": "cobrar"
+    },
+    {
+      "codigo": "OT",
+      "nombre": "Otro",
+      "tipo": "ambos"
+    }
+  ],
+  "canjes": [
+    {
+      "codigo": "C1",
+      "nombre": "Medio punto en una nota",
+      "precio": 50,
+      "cuenta": "docente"
+    },
+    {
+      "codigo": "C2",
+      "nombre": "Elegir puesto por una semana",
+      "precio": 20,
+      "cuenta": "docente"
+    },
+    {
+      "codigo": "C3",
+      "nombre": "Entrega tardía sin penalidad",
+      "precio": 30,
+      "cuenta": "docente"
+    },
+    {
+      "codigo": "C4",
+      "nombre": "Salida pedagógica",
+      "precio": 80,
+      "cuenta": "institucional"
+    },
+    {
+      "codigo": "C5",
+      "nombre": "Medio punto en Matemáticas",
+      "precio": 50,
+      "cuenta": "docente",
+      "docente": 1
+    }
+  ],
+  "docentes": [
+    {
+      "codigo": 1,
+      "nombre": "Docente 1"
+    },
+    {
+      "codigo": 2,
+      "nombre": "Docente 2"
+    }
+  ]
+}
